@@ -30,13 +30,24 @@ jobs:
         run: |
           python3 - <<'PY'
           import base64
+          import hashlib
           import os
           from pathlib import Path
 
           base64_data = os.environ["KEYSTORE_BASE64"].strip()
-          keystore = base64.b64decode(base64_data)
+
+          keystore = base64.b64decode(
+              base64_data,
+              validate=True
+          )
 
           Path("android/auvix-release-key.jks").write_bytes(keystore)
+
+          print("Keystore bytes:", len(keystore))
+          print(
+              "Keystore SHA256:",
+              hashlib.sha256(keystore).hexdigest()
+          )
           PY
 
           cat > android/key.properties <<EOF
@@ -57,8 +68,11 @@ jobs:
 
           val keystoreProperties = Properties()
           val keystorePropertiesFile = rootProject.file("key.properties")
+
           if (keystorePropertiesFile.exists()) {
-              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+              keystoreProperties.load(
+                  FileInputStream(keystorePropertiesFile)
+              )
           }
 
           """
@@ -67,10 +81,19 @@ jobs:
 
           signing_config = """    signingConfigs {
                   create("release") {
-                      keyAlias = keystoreProperties["keyAlias"] as String
-                      keyPassword = keystoreProperties["keyPassword"] as String
-                      storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
-                      storePassword = keystoreProperties["storePassword"] as String
+                      keyAlias =
+                          keystoreProperties["keyAlias"] as String
+
+                      keyPassword =
+                          keystoreProperties["keyPassword"] as String
+
+                      storeFile =
+                          rootProject.file(
+                              keystoreProperties["storeFile"] as String
+                          )
+
+                      storePassword =
+                          keystoreProperties["storePassword"] as String
                   }
               }
 
