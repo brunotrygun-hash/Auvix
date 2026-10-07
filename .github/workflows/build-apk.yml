@@ -25,16 +25,19 @@ jobs:
 
       - name: Configurar assinatura
         env:
-          KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
         run: |
           python3 - <<'PY'
-import os
-from pathlib import Path
+          import base64
+          import os
+          from pathlib import Path
 
-hex_data = os.environ["KEYSTORE_BASE64"].strip()
-Path("android/auvix-release-key.jks").write_bytes(bytes.fromhex(hex_data))
-PY
+          base64_data = os.environ["KEYSTORE_BASE64"].strip()
+          keystore = base64.b64decode(base64_data)
+
+          Path("android/auvix-release-key.jks").write_bytes(keystore)
+          PY
 
           cat > android/key.properties <<EOF
           storePassword=$KEYSTORE_PASSWORD
@@ -73,7 +76,10 @@ PY
 
               """
 
-          text = text.replace("    buildTypes {", signing_config + "    buildTypes {")
+          text = text.replace(
+              "    buildTypes {",
+              signing_config + "    buildTypes {"
+          )
 
           text = text.replace(
               'signingConfig = signingConfigs.getByName("debug")',
