@@ -47,7 +47,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           const SizedBox(height: 4),
           const Text('Seu portfólio está em movimento.', style: TextStyle(color: AuvixTheme.muted)),
           const SizedBox(height: 18),
-          _PortfolioCard(total: total, profit: profit, profitPercent: profitPercent),
+          _PortfolioCard(total: total, profit: profit, profitPercent: profitPercent.toDouble()),
           const SizedBox(height: 26),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Meus Ativos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)), TextButton(onPressed: _addAsset, child: const Text('Adicionar'))]),
           const SizedBox(height: 8),
