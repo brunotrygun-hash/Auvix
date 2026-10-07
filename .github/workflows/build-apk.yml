@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código
+      - name: Baixar codigo
         uses: actions/checkout@v4
 
       - name: Configurar Flutter
@@ -23,7 +23,7 @@ jobs:
       - name: Criar plataforma Android
         run: flutter create --platforms=android .
 
-      - name: Configurar assinatura
+      - name: Configurar e testar assinatura
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
@@ -41,7 +41,8 @@ jobs:
               validate=True
           )
 
-          Path("android/auvix-release-key.jks").write_bytes(keystore)
+          path = Path("android/auvix-release-key.jks")
+          path.write_bytes(keystore)
 
           print("Keystore bytes:", len(keystore))
           print(
@@ -49,6 +50,15 @@ jobs:
               hashlib.sha256(keystore).hexdigest()
           )
           PY
+
+          echo "Testando keystore..."
+
+          keytool -list \
+            -keystore android/auvix-release-key.jks \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias auvix
+
+          echo "Keystore validado com sucesso."
 
           cat > android/key.properties <<EOF
           storePassword=$KEYSTORE_PASSWORD
@@ -77,7 +87,8 @@ jobs:
 
           """
 
-          text = imports + text
+          if not text.startswith("import java.io.FileInputStream"):
+              text = imports + text
 
           signing_config = """    signingConfigs {
                   create("release") {
@@ -99,10 +110,11 @@ jobs:
 
               """
 
-          text = text.replace(
-              "    buildTypes {",
-              signing_config + "    buildTypes {"
-          )
+          if "create(\"release\")" not in text:
+              text = text.replace(
+                  "    buildTypes {",
+                  signing_config + "    buildTypes {"
+              )
 
           text = text.replace(
               'signingConfig = signingConfigs.getByName("debug")',
@@ -112,7 +124,7 @@ jobs:
           path.write_text(text)
           PY
 
-      - name: Instalar dependências
+      - name: Instalar dependencias
         run: flutter pub get
 
       - name: Compilar APK
