@@ -25,7 +25,7 @@ jobs:
 
       - name: Configurar e testar assinatura
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
         run: |
           python3 - <<'PY'
@@ -110,7 +110,7 @@ jobs:
 
               """
 
-          if "create(\"release\")" not in text:
+          if 'create("release")' not in text:
               text = text.replace(
                   "    buildTypes {",
                   signing_config + "    buildTypes {"
