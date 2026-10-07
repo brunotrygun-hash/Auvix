@@ -23,6 +23,60 @@ jobs:
       - name: Criar plataforma Android
         run: flutter create --platforms=android .
 
+      - name: Configurar assinatura
+        env:
+          KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/auvix-release-key.jks
+
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=auvix
+          storeFile=auvix-release-key.jks
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/app/build.gradle.kts")
+          text = path.read_text()
+
+          imports = """import java.io.FileInputStream
+          import java.util.Properties
+
+          val keystoreProperties = Properties()
+          val keystorePropertiesFile = rootProject.file("key.properties")
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+          }
+
+          """
+
+          text = imports + text
+
+          signing_config = """    signingConfigs {
+                  create("release") {
+                      keyAlias = keystoreProperties["keyAlias"] as String
+                      keyPassword = keystoreProperties["keyPassword"] as String
+                      storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                      storePassword = keystoreProperties["storePassword"] as String
+                  }
+              }
+
+              """
+
+          text = text.replace("    buildTypes {", signing_config + "    buildTypes {")
+
+          text = text.replace(
+              'signingConfig = signingConfigs.getByName("debug")',
+              'signingConfig = signingConfigs.getByName("release")'
+          )
+
+          path.write_text(text)
+          PY
+
       - name: Instalar dependências
         run: flutter pub get
 
