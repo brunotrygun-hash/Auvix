@@ -28,7 +28,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
         run: |
-          echo "$KEYSTORE_BASE64" | xxd -r -p > android/auvix-release-key.jks
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/auvix-release-key.jks
 
           cat > android/key.properties <<EOF
           storePassword=$KEYSTORE_PASSWORD
