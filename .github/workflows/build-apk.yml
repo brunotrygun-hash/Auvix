@@ -28,7 +28,13 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.AUVIX_KEYSTORE_PASSWORD }}
         run: |
-          echo "$KEYSTORE_BASE64" | xxd -r -p > android/auvix-release-key.jks
+          python3 - <<'PY'
+import os
+from pathlib import Path
+
+hex_data = os.environ["KEYSTORE_BASE64"].strip()
+Path("android/auvix-release-key.jks").write_bytes(bytes.fromhex(hex_data))
+PY
 
           cat > android/key.properties <<EOF
           storePassword=$KEYSTORE_PASSWORD
