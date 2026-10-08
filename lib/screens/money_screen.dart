@@ -17,8 +17,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
   double _monthlyGoal = 0;
   double _goal = 0;
 
- List<Map<String, dynamic>> _history = [];
-bool _savingMoney = false;
+  List<Map<String, dynamic>> _history = [];
 
   @override
   void initState() {
@@ -29,19 +28,19 @@ bool _savingMoney = false;
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final historyData = prefs.getString('auvix_money_history');
+    final historyString = prefs.getString('auvix_money_history');
 
     setState(() {
       _total = prefs.getDouble('auvix_money_total') ?? 0;
       _monthlyGoal = prefs.getDouble('auvix_money_monthly_goal') ?? 0;
       _goal = prefs.getDouble('auvix_money_goal') ?? 0;
 
-      if (historyData != null) {
-        final decoded = jsonDecode(historyData);
+      if (historyString != null && historyString.isNotEmpty) {
+        final decoded = jsonDecode(historyString);
 
         if (decoded is List) {
           _history = decoded
-              .map<Map<String, dynamic>>(
+              .map(
                 (item) => Map<String, dynamic>.from(item),
               )
               .toList();
@@ -53,9 +52,21 @@ bool _savingMoney = false;
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setDouble('auvix_money_total', _total);
-    await prefs.setDouble('auvix_money_monthly_goal', _monthlyGoal);
-    await prefs.setDouble('auvix_money_goal', _goal);
+    await prefs.setDouble(
+      'auvix_money_total',
+      _total,
+    );
+
+    await prefs.setDouble(
+      'auvix_money_monthly_goal',
+      _monthlyGoal,
+    );
+
+    await prefs.setDouble(
+      'auvix_money_goal',
+      _goal,
+    );
+
     await prefs.setString(
       'auvix_money_history',
       jsonEncode(_history),
@@ -66,7 +77,7 @@ bool _savingMoney = false;
     final valueController = TextEditingController();
     final descriptionController = TextEditingController();
 
-    await showDialog(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -82,14 +93,15 @@ bool _savingMoney = false;
                 decoration: const InputDecoration(
                   labelText: 'Valor',
                   prefixText: 'R\$ ',
+                  hintText: '100,00',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: descriptionController,
                 decoration: const InputDecoration(
                   labelText: 'Descrição',
-                  hintText: 'Ex.: Reserva para investimento',
+                  hintText: 'Ex.: Dinheiro separado para investir',
                 ),
               ),
             ],
@@ -97,17 +109,16 @@ bool _savingMoney = false;
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.of(dialogContext).pop();
               },
               child: const Text('Cancelar'),
             ),
-           FilledButton(
-  onPressed: _savingMoney
-      ? null
-      : () async {
-          _savingMoney = true;
+            FilledButton(
+              onPressed: () {
                 final value = double.tryParse(
-                  valueController.text.replaceAll(',', '.'),
+                  valueController.text
+                      .replaceAll('.', '')
+                      .replaceAll(',', '.'),
                 );
 
                 if (value == null || value <= 0) {
@@ -124,38 +135,10 @@ bool _savingMoney = false;
                         ? 'Dinheiro reservado'
                         : descriptionController.text.trim();
 
-                final now = DateTime.now();
-
-                setState(() {
-                  _total += value;
-
-                  _history.insert(
-                    0,
-                    {
-                      'value': value,
-                      'description': description,
-                      'date':
-                          '${now.day.toString().padLeft(2, '0')}/'
-                          '${now.month.toString().padLeft(2, '0')}/'
-                          '${now.year}',
-                    },
-                  );
+                Navigator.of(dialogContext).pop({
+                  'value': value,
+                  'description': description,
                 });
-
-                await _saveData();
-                _savingMoney = false;
-
-                if (context.mounted) {
-                 Navigator.of(context, rootNavigator: true).pop();
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Dinheiro registrado com sucesso!',
-                      ),
-                    ),
-                  );
-                }
               },
               child: const Text('Salvar'),
             ),
@@ -166,16 +149,51 @@ bool _savingMoney = false;
 
     valueController.dispose();
     descriptionController.dispose();
+
+    if (result == null) {
+      return;
+    }
+
+    final value = result['value'] as double;
+    final description = result['description'] as String;
+
+    final now = DateTime.now();
+
+    setState(() {
+      _total += value;
+
+      _history.insert(
+        0,
+        {
+          'value': value,
+          'description': description,
+          'date':
+              '${now.day.toString().padLeft(2, '0')}/'
+              '${now.month.toString().padLeft(2, '0')}/'
+              '${now.year}',
+        },
+      );
+    });
+
+    await _saveData();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Dinheiro registrado com sucesso!'),
+      ),
+    );
   }
 
   Future<void> _setGoal() async {
-    final controller = TextEditingController(
-      text: _goal == 0 ? '' : _goal.toStringAsFixed(2),
-    );
+    final controller = TextEditingController();
 
-    await showDialog(
+    final result = await showDialog<double>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Definir meta'),
           content: TextField(
@@ -184,34 +202,31 @@ bool _savingMoney = false;
               decimal: true,
             ),
             decoration: const InputDecoration(
-              labelText: 'Meta financeira',
+              labelText: 'Valor da meta',
               prefixText: 'R\$ ',
+              hintText: '5000,00',
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancelar'),
             ),
             FilledButton(
-              onPressed: () async {
+              onPressed: () {
                 final value = double.tryParse(
-                  controller.text.replaceAll(',', '.'),
+                  controller.text
+                      .replaceAll('.', '')
+                      .replaceAll(',', '.'),
                 );
 
                 if (value == null || value <= 0) {
                   return;
                 }
 
-                setState(() {
-                  _goal = value;
-                });
-
-                await _saveData();
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
+                Navigator.of(dialogContext).pop(value);
               },
               child: const Text('Salvar'),
             ),
@@ -221,18 +236,24 @@ bool _savingMoney = false;
     );
 
     controller.dispose();
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _goal = result;
+    });
+
+    await _saveData();
   }
 
   Future<void> _setMonthlyGoal() async {
-    final controller = TextEditingController(
-      text: _monthlyGoal == 0
-          ? ''
-          : _monthlyGoal.toStringAsFixed(2),
-    );
+    final controller = TextEditingController();
 
-    await showDialog(
+    final result = await showDialog<double>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Meta mensal'),
           content: TextField(
@@ -243,32 +264,29 @@ bool _savingMoney = false;
             decoration: const InputDecoration(
               labelText: 'Quanto pretende guardar por mês?',
               prefixText: 'R\$ ',
+              hintText: '500,00',
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancelar'),
             ),
             FilledButton(
-              onPressed: () async {
+              onPressed: () {
                 final value = double.tryParse(
-                  controller.text.replaceAll(',', '.'),
+                  controller.text
+                      .replaceAll('.', '')
+                      .replaceAll(',', '.'),
                 );
 
                 if (value == null || value <= 0) {
                   return;
                 }
 
-                setState(() {
-                  _monthlyGoal = value;
-                });
-
-                await _saveData();
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
+                Navigator.of(dialogContext).pop(value);
               },
               child: const Text('Salvar'),
             ),
@@ -278,6 +296,16 @@ bool _savingMoney = false;
     );
 
     controller.dispose();
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _monthlyGoal = result;
+    });
+
+    await _saveData();
   }
 
   String _money(double value) {
@@ -286,257 +314,131 @@ bool _savingMoney = false;
 
   @override
   Widget build(BuildContext context) {
- final double remaining = _goal > _total ? _goal - _total : 0.0;
+    final remaining = _goal > _total ? _goal - _total : 0.0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dinheiro'),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'Seu dinheiro',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Organize o dinheiro que você está reservando para investir.',
-              style: TextStyle(
-                color: AuvixTheme.muted,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AuvixTheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF183A4A),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.account_balance_wallet_rounded,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Reservado para investir',
-                    style: TextStyle(
-                      color: AuvixTheme.muted,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _money(_total),
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
+            _MoneySummaryCard(
+              total: _total,
+              goal: _goal,
+              monthlyGoal: _monthlyGoal,
+              remaining: remaining,
+              money: _money,
             ),
 
             const SizedBox(height: 20),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoCard(
-                    icon: Icons.savings_rounded,
-                    title: 'Meta',
-                    value: _money(_goal),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _InfoCard(
-                    icon: Icons.calendar_month_rounded,
-                    title: 'Por mês',
-                    value: _money(_monthlyGoal),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            if (_goal > 0)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AuvixTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.flag_rounded),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        remaining > 0
-                            ? 'Faltam ${_money(remaining)} para sua meta.'
-                            : 'Parabéns! Sua meta foi atingida.',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 28),
-
             const Text(
-              'Planejamento',
+              'Organização financeira',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: 12),
 
             _ActionCard(
-              icon: Icons.add_circle_outline_rounded,
+              icon: Icons.add_circle_outline,
               title: 'Registrar dinheiro',
-              subtitle: 'Adicione um valor reservado para investir.',
+              subtitle: 'Adicione um novo valor reservado',
               onTap: _registerMoney,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             _ActionCard(
               icon: Icons.flag_outlined,
               title: 'Definir meta',
-              subtitle: 'Escolha quanto você pretende acumular.',
+              subtitle: 'Defina quanto pretende acumular',
               onTap: _setGoal,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             _ActionCard(
-              icon: Icons.calendar_month_rounded,
+              icon: Icons.calendar_month_outlined,
               title: 'Meta mensal',
-              subtitle: 'Defina quanto pretende guardar por mês.',
+              subtitle: 'Defina quanto pretende guardar por mês',
               onTap: _setMonthlyGoal,
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
             const Text(
-              'Histórico de aportes',
+              'Histórico',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: 12),
 
             if (_history.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AuvixTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Text(
-                  'Nenhum valor registrado ainda.',
-                  style: TextStyle(
-                    color: AuvixTheme.muted,
-                  ),
+              _SectionCard(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 42,
+                      color: AuvixTheme.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Nenhum valor registrado ainda.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Use "Registrar dinheiro" para começar.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
               ..._history.map(
-                (item) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AuvixTheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.savings_rounded,
-                        size: 26,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item['description'] as String,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item['date'] as String,
-                              style: const TextStyle(
-                                color: AuvixTheme.muted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        _money((item['value'] as num).toDouble()),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _HistoryCard(
+                    description:
+                        item['description']?.toString() ??
+                            'Dinheiro reservado',
+                    date: item['date']?.toString() ?? '',
+                    value: (item['value'] as num?)?.toDouble() ?? 0,
+                    money: _money,
                   ),
                 ),
               ),
 
             const SizedBox(height: 20),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AuvixTheme.surface,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Row(
+            _SectionCard(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    Icons.insights_rounded,
-                    size: 28,
+                    Icons.info_outline,
+                    color: AuvixTheme.primary,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'O objetivo do AUVIX é ajudar você a organizar o dinheiro antes, durante e depois dos seus investimentos.',
+                      'O AUVIX usa esta área para ajudar você a organizar o dinheiro reservado para futuros investimentos.',
                       style: TextStyle(
-                        color: AuvixTheme.muted,
+                        color: Colors.white.withValues(alpha: 0.75),
                         height: 1.4,
                       ),
                     ),
@@ -544,6 +446,8 @@ bool _savingMoney = false;
                 ],
               ),
             ),
+
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -551,47 +455,115 @@ bool _savingMoney = false;
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
+class _MoneySummaryCard extends StatelessWidget {
+  final double total;
+  final double goal;
+  final double monthlyGoal;
+  final double remaining;
+  final String Function(double) money;
 
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.value,
+  const _MoneySummaryCard({
+    required this.total,
+    required this.goal,
+    required this.monthlyGoal,
+    required this.remaining,
+    required this.money,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AuvixTheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        color: AuvixTheme.primary.withValues(alpha: 0.15),
+        border: Border.all(
+          color: AuvixTheme.primary.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 25),
-          const SizedBox(height: 10),
           Text(
-            title,
-            style: const TextStyle(
-              color: AuvixTheme.muted,
-              fontSize: 13,
+            'Dinheiro reservado',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
-            value,
+            money(total),
             style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _SmallValue(
+                  label: 'Meta',
+                  value: goal > 0 ? money(goal) : 'Não definida',
+                ),
+              ),
+              Expanded(
+                child: _SmallValue(
+                  label: 'Mensal',
+                  value: monthlyGoal > 0
+                      ? money(monthlyGoal)
+                      : 'Não definida',
+                ),
+              ),
+            ],
+          ),
+          if (goal > 0) ...[
+            const SizedBox(height: 16),
+            Text(
+              remaining > 0
+                  ? 'Faltam ${money(remaining)} para sua meta.'
+                  : '🎯 Meta alcançada!',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _SmallValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SmallValue({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -611,46 +583,138 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AuvixTheme.surface,
-          borderRadius: BorderRadius.circular(18),
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AuvixTheme.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  color: AuvixTheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  final String description;
+  final String date;
+  final double value;
+  final String Function(double) money;
+
+  const _HistoryCard({
+    required this.description,
+    required this.date,
+    required this.value,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, size: 28),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.savings_outlined,
+                color: Colors.greenAccent,
+              ),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    description,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AuvixTheme.muted,
-                      fontSize: 13,
+                    date,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded),
+            Text(
+              '+ ${money(value)}',
+              style: const TextStyle(
+                color: Colors.greenAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+
+  const _SectionCard({
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: child,
     );
   }
 }
