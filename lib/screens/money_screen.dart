@@ -17,7 +17,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
   double _monthlyGoal = 0;
   double _goal = 0;
 
-  List<Map<String, dynamic>> _history = [];
+ List<Map<String, dynamic>> _history = [];
+bool _savingMoney = false;
 
   @override
   void initState() {
@@ -100,8 +101,11 @@ class _MoneyScreenState extends State<MoneyScreen> {
               },
               child: const Text('Cancelar'),
             ),
-            FilledButton(
-              onPressed: () async {
+           FilledButton(
+  onPressed: _savingMoney
+      ? null
+      : () async {
+          _savingMoney = true;
                 final value = double.tryParse(
                   valueController.text.replaceAll(',', '.'),
                 );
@@ -139,6 +143,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 });
 
                 await _saveData();
+                _savingMoney = false;
 
                 if (context.mounted) {
                  Navigator.of(context, rootNavigator: true).pop();
