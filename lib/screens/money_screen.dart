@@ -281,7 +281,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = _goal > _total ? _goal - _total : 0;
+ final double remaining = _goal > _total ? _goal - _total : 0.0;
 
     return Scaffold(
       appBar: AppBar(
