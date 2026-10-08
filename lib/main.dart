@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/auvix_theme.dart';
 import 'screens/login_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ class AuvixApp extends StatelessWidget {
       title: 'AUVIX',
       debugShowCheckedModeBanner: false,
       theme: AuvixTheme.dark(),
-      home: const LoginScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }
