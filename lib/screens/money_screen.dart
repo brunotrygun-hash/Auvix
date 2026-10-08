@@ -22,9 +22,7 @@ class MoneyScreen extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 8),
-
             const Text(
               'Organize o dinheiro que você está reservando para investir.',
               style: TextStyle(
@@ -32,7 +30,6 @@ class MoneyScreen extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
-
             const SizedBox(height: 24),
 
             Container(
@@ -189,8 +186,92 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 25),
+          Icon(
+            icon,
+            size: 25,
+          ),
           const SizedBox(height: 10),
           Text(
             title,
-            style: const
+            style: const TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AuvixTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 28,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AuvixTheme.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
