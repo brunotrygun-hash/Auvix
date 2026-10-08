@@ -67,7 +67,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
     await showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Registrar dinheiro'),
           content: Column(
