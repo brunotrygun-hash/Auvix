@@ -4,7 +4,7 @@ import '../services/portfolio_service.dart';
 import '../theme/auvix_theme.dart';
 import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
-
+import 'compound_interest_screen.dart';
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
 
@@ -48,7 +48,62 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           const Text('Seu portfólio está em movimento.', style: TextStyle(color: AuvixTheme.muted)),
           const SizedBox(height: 18),
           _PortfolioCard(total: total, profit: profit, profitPercent: profitPercent.toDouble()),
-          const SizedBox(height: 26),
+
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(18),
+  decoration: BoxDecoration(
+    color: AuvixTheme.surface,
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(
+      color: const Color(0xFF183A4A),
+    ),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Row(
+        children: [
+          Icon(
+            Icons.calculate_rounded,
+            size: 28,
+          ),
+          SizedBox(width: 10),
+          Text(
+            'Calculadora',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'Simule o crescimento do seu dinheiro com juros compostos.',
+        style: TextStyle(
+          color: AuvixTheme.muted,
+        ),
+      ),
+      const SizedBox(height: 14),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CompoundInterestScreen(),
+              ),
+            );
+          },
+          child: const Text('🧮 CALCULAR'),
+        ),
+      ),
+    ],
+  ),
+),
+
+const SizedBox(height: 26),          const SizedBox(height: 26),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Meus Ativos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)), TextButton(onPressed: _addAsset, child: const Text('Adicionar'))]),
           const SizedBox(height: 8),
           ...positions.map((position) => _AssetTile(position: position, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AssetDetailScreen(position: position))))),
