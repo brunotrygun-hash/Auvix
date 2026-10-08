@@ -141,7 +141,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 await _saveData();
 
                 if (context.mounted) {
-                  Navigator.pop(context);
+                 Navigator.of(context, rootNavigator: true).pop();
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
