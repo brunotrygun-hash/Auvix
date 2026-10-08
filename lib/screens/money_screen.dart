@@ -390,7 +390,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     Icon(
                       Icons.account_balance_wallet_outlined,
                       size: 42,
-                      color: AuvixTheme.primary,
+                      color: AuvixTheme.accent,
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -431,7 +431,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 children: [
                   Icon(
                     Icons.info_outline,
-                    color: AuvixTheme.primary,
+                    color: AuvixTheme.accent,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -476,9 +476,9 @@ class _MoneySummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        color: AuvixTheme.primary.withValues(alpha: 0.15),
+        color: AuvixTheme.accent.withValues(alpha: 0.15),
         border: Border.all(
-          color: AuvixTheme.primary.withValues(alpha: 0.35),
+          color: AuvixTheme.accent.withValues(alpha: 0.35),
         ),
       ),
       child: Column(
@@ -594,12 +594,12 @@ class _ActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AuvixTheme.primary.withValues(alpha: 0.15),
+                  color: AuvixTheme.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   icon,
-                  color: AuvixTheme.primary,
+                  color: AuvixTheme.accent,
                 ),
               ),
               const SizedBox(width: 14),
