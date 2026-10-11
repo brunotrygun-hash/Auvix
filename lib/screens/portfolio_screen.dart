@@ -8,6 +8,7 @@ import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
 import 'compound_interest_screen.dart';
 import 'money_screen.dart';
+import 'market_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -51,6 +52,13 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const MoneyScreen(),
+      ),
+    );
+  }
+    void _openMarket() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const MarketScreen(),
       ),
     );
   }
@@ -229,9 +237,11 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
-        onDestinationSelected: (index) {
+               onDestinationSelected: (index) {
           if (index == 1) {
             _openMoney();
+          } else if (index == 2) {
+            _openMarket();
           }
         },
         destinations: const [
