@@ -127,6 +127,9 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Gerar icones do AUVIX
+        run: dart run flutter_launcher_icons
+
       - name: Compilar APK
         run: flutter build apk --release
 
