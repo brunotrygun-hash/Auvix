@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/auvix_theme.dart';
+import '../screens/learn_investing_screen.dart';
 
 class HomeShortcuts extends StatelessWidget {
   const HomeShortcuts({super.key});
@@ -145,60 +146,77 @@ class LearnInvestingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF103847),
-            Color(0xFF0B1C27),
-          ],
-        ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF1B665E)),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'APRENDA A INVESTIR',
-                  style: TextStyle(
-                    color: AuvixTheme.accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Seu conhecimento é o primeiro investimento.',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Comece do básico e avance no seu ritmo.',
-                  style: TextStyle(
-                    color: AuvixTheme.muted,
-                    fontSize: 12,
-                  ),
-                ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const LearnInvestingScreen(),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF103847),
+                Color(0xFF0B1C27),
               ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF1B665E),
+            ),
           ),
-          const SizedBox(width: 10),
-          Icon(
-            Icons.school_rounded,
-            color: AuvixTheme.accent,
-            size: 48,
+          child: const Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'APRENDA A INVESTIR',
+                      style: TextStyle(
+                        color: AuvixTheme.accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Seu conhecimento é o primeiro investimento.',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Comece do básico e avance no seu ritmo.',
+                      style: TextStyle(
+                        color: AuvixTheme.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 10),
+              Icon(
+                Icons.school_rounded,
+                color: AuvixTheme.accent,
+                size: 48,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
