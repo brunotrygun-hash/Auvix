@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/auvix_theme.dart';
+import 'lessons_screen.dart';
 
 class LearnInvestingScreen extends StatelessWidget {
   const LearnInvestingScreen({super.key});
@@ -156,77 +157,96 @@ class _ModuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(
-        color: AuvixTheme.surface,
+    return Material(
+      color: AuvixTheme.surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF183A4A)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AuvixTheme.surface2,
-              borderRadius: BorderRadius.circular(15),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LessonsScreen(
+                moduleNumber: module['number'] as String,
+                moduleTitle: module['title'] as String,
+              ),
             ),
-            child: Icon(
-              module['icon'] as IconData,
-              color: AuvixTheme.accent,
-              size: 27,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MÓDULO ${module['number']}',
-                  style: const TextStyle(
-                    color: AuvixTheme.accent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  module['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  module['description'] as String,
-                  style: const TextStyle(
-                    color: AuvixTheme.muted,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  module['lessons'] as String,
-                  style: const TextStyle(
-                    color: AuvixTheme.muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: const Color(0xFF183A4A),
             ),
           ),
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AuvixTheme.accent,
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AuvixTheme.surface2,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  module['icon'] as IconData,
+                  color: AuvixTheme.accent,
+                  size: 27,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MÓDULO ${module['number']}',
+                      style: const TextStyle(
+                        color: AuvixTheme.accent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      module['title'] as String,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      module['description'] as String,
+                      style: const TextStyle(
+                        color: AuvixTheme.muted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      module['lessons'] as String,
+                      style: const TextStyle(
+                        color: AuvixTheme.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AuvixTheme.accent,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
