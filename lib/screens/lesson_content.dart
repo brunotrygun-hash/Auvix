@@ -261,7 +261,7 @@ class _LessonContentScreenState extends State<LessonContentScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  if (selectedAnswer == 1 && !lessonCompleted) ...[
+                  if (selectedAnswer == 1) ...[
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
