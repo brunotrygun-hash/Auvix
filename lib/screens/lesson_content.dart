@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -13,6 +14,21 @@ class LessonContentScreen extends StatefulWidget {
 class _LessonContentScreenState extends State<LessonContentScreen> {
   int? selectedAnswer;
   bool answered = false;
+  bool lessonCompleted = false;
+
+  Future<void> completeLesson() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("lesson_01_completed", true);
+    if (!mounted) return;
+    setState(() {
+      lessonCompleted = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Aula 01 concluída e progresso salvo!"),
+      ),
+    );
+  }
 
   static const List<String> answers = [
     'Investir é guardar dinheiro sem nenhum risco.',
@@ -20,6 +36,21 @@ class _LessonContentScreenState extends State<LessonContentScreen> {
     'Investir significa comprar somente ações.',
     'Investir garante lucro em qualquer situação.',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completed = prefs.getBool("lesson_01_completed") ?? false;
+    if (!mounted) return;
+    setState(() {
+      lessonCompleted = completed;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,6 +261,15 @@ class _LessonContentScreenState extends State<LessonContentScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  if (selectedAnswer == 1 && !lessonCompleted) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: completeLesson,
+                        child: const Text("Concluir aula"),
+                      ),
+                    ),
+                  ],
                   if (selectedAnswer != 1)
                     TextButton(
                       onPressed: () {
