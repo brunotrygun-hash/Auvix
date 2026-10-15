@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/auvix_theme.dart';
+import 'lesson_content.dart';
 
 class LessonsScreen extends StatelessWidget {
   final String moduleNumber;
@@ -113,7 +114,7 @@ class LessonsScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LessonDetailScreen(
+                        builder: (_) => index == 0 ? const LessonContentScreen() : LessonDetailScreen(
                           lessonNumber: index + 1,
                           title: lesson['title']!,
                           duration: lesson['duration']!,
