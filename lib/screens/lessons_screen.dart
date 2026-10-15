@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme/auvix_theme.dart';
 import 'lesson_content.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class LessonsScreen extends StatelessWidget {
+class LessonsScreen extends StatefulWidget {
   final String moduleNumber;
   final String moduleTitle;
 
@@ -12,6 +13,28 @@ class LessonsScreen extends StatelessWidget {
     required this.moduleNumber,
     required this.moduleTitle,
   });
+
+  @override
+  State<LessonsScreen> createState() => _LessonsScreenState();
+}
+
+class _LessonsScreenState extends State<LessonsScreen> {
+  bool lesson01Completed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completed = prefs.getBool("lesson_01_completed") ?? false;
+    if (!mounted) return;
+    setState(() {
+      lesson01Completed = completed;
+    });
+  }
 
   static const List<Map<String, String>> fundamentalsLessons = [
     {
@@ -48,7 +71,7 @@ class LessonsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lessons = moduleNumber == '01'
+    final lessons = widget.moduleNumber == '01'
         ? fundamentalsLessons
         : <Map<String, String>>[];
 
@@ -58,8 +81,8 @@ class LessonsScreen extends StatelessWidget {
         backgroundColor: AuvixTheme.background,
         foregroundColor: AuvixTheme.text,
         title: Text(
-          'Módulo $moduleNumber',
-          style: const TextStyle(
+          'Módulo $widget.moduleNumber',
+          style: TextStyle(
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -68,8 +91,8 @@ class LessonsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            moduleTitle,
-            style: const TextStyle(
+            widget.moduleTitle,
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -110,8 +133,8 @@ class LessonsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => index == 0 ? const LessonContentScreen() : LessonDetailScreen(
@@ -122,6 +145,7 @@ class LessonsScreen extends StatelessWidget {
                         ),
                       ),
                     );
+                      await _loadProgress();
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -132,13 +156,13 @@ class LessonsScreen extends StatelessWidget {
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: AuvixTheme.surface2,
+                            color: index == 0 && lesson01Completed ? AuvixTheme.accent : AuvixTheme.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${index + 1}'.padLeft(2, '0'),
-                            style: const TextStyle(
-                              color: AuvixTheme.accent,
+                            style: TextStyle(
+                              color: index == 0 && lesson01Completed ? AuvixTheme.background : AuvixTheme.accent,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -150,7 +174,7 @@ class LessonsScreen extends StatelessWidget {
                             children: [
                               Text(
                                 lesson['title']!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -158,7 +182,7 @@ class LessonsScreen extends StatelessWidget {
                               const SizedBox(height: 6),
                               Text(
                                 lesson['duration']!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AuvixTheme.muted,
                                   fontSize: 12,
                                 ),
@@ -224,7 +248,7 @@ class LessonDetailScreen extends StatelessWidget {
         children: [
           Text(
             'AULA ${lessonNumber.toString().padLeft(2, '0')}',
-            style: const TextStyle(
+            style: TextStyle(
               color: AuvixTheme.accent,
               fontSize: 12,
               fontWeight: FontWeight.w900,
@@ -234,7 +258,7 @@ class LessonDetailScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 27,
               fontWeight: FontWeight.w900,
             ),
@@ -250,7 +274,7 @@ class LessonDetailScreen extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 duration,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AuvixTheme.muted,
                   fontSize: 13,
                 ),
@@ -281,7 +305,7 @@ class LessonDetailScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.7,
                   ),
