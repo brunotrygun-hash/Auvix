@@ -5,6 +5,7 @@ import 'lessons_screen.dart';
 import 'module2_lessons_screen.dart';
 import 'module3_lessons_screen.dart';
 import 'module4_lessons_screen.dart';
+import 'module5_lessons_screen.dart';
 
 class LearnInvestingScreen extends StatelessWidget {
   const LearnInvestingScreen({super.key});
@@ -173,7 +174,7 @@ class _ModuleCard extends StatelessWidget {
                   ? const Module2LessonsScreen()
                   : module['number'] == '03'
                       ? const Module3LessonsScreen()
-                  : module['number'] == '04' ? const Module4LessonsScreen() : LessonsScreen(
+                  : module['number'] == '04' ? const Module4LessonsScreen() : module['number'] == '05' ? const Module5LessonsScreen() : LessonsScreen(
                       moduleNumber: module['number'] as String,
                       moduleTitle: module['title'] as String,
                     ),
