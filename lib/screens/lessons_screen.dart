@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/auvix_theme.dart';
 import 'lesson_content.dart';
+import 'interactive_lesson_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LessonsScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class LessonsScreen extends StatefulWidget {
 
 class _LessonsScreenState extends State<LessonsScreen> {
   bool lesson01Completed = false;
+  final Set<int> completedLessons = {};
 
   @override
   void initState() {
@@ -30,9 +32,17 @@ class _LessonsScreenState extends State<LessonsScreen> {
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     final completed = prefs.getBool("lesson_01_completed") ?? false;
+    final completedNumbers = <int>{};
+    for (var lesson = 2; lesson <= 5; lesson++) {
+      if (prefs.getBool("lesson_${lesson}_completed") ?? false) {
+        completedNumbers.add(lesson);
+      }
+    }
     if (!mounted) return;
     setState(() {
       lesson01Completed = completed;
+      completedLessons.clear();
+      completedLessons.addAll(completedNumbers);
     });
   }
 
@@ -125,6 +135,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
           ...lessons.asMap().entries.map((entry) {
             final index = entry.key;
             final lesson = entry.value;
+            final isCompleted = index == 0 ? lesson01Completed : completedLessons.contains(index + 1);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -137,7 +148,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => index == 0 ? const LessonContentScreen() : LessonDetailScreen(
+                        builder: (_) => index == 0 ? const LessonContentScreen() : InteractiveLessonScreen(
                           lessonNumber: index + 1,
                           title: lesson['title']!,
                           duration: lesson['duration']!,
@@ -156,13 +167,13 @@ class _LessonsScreenState extends State<LessonsScreen> {
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: index == 0 && lesson01Completed ? AuvixTheme.accent : AuvixTheme.surface2,
+                            color: isCompleted ? AuvixTheme.accent : AuvixTheme.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${index + 1}'.padLeft(2, '0'),
                             style: TextStyle(
-                              color: index == 0 && lesson01Completed ? AuvixTheme.background : AuvixTheme.accent,
+                              color: isCompleted ? AuvixTheme.background : AuvixTheme.accent,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
