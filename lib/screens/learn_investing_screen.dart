@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/auvix_theme.dart';
 import 'lessons_screen.dart';
 import 'module2_lessons_screen.dart';
+import 'module3_lessons_screen.dart';
 
 class LearnInvestingScreen extends StatelessWidget {
   const LearnInvestingScreen({super.key});
@@ -169,6 +170,8 @@ class _ModuleCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => module['number'] == '02'
                   ? const Module2LessonsScreen()
+                  : module['number'] == '03'
+                      ? const Module3LessonsScreen()
                   : LessonsScreen(
                       moduleNumber: module['number'] as String,
                       moduleTitle: module['title'] as String,
