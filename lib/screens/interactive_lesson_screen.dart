@@ -109,9 +109,9 @@ class _InteractiveLessonScreenState
               'em determinado período. Ele pode ser positivo ou '
               'negativo e deve considerar, quando aplicável, custos '
               'e impostos.\n\n'
-              'Por exemplo, se um investimento de R$ 1.000 passar '
-              'a valer R$ 1.080, houve uma valorização bruta de '
-              'R$ 80, equivalente a 8%, antes de eventuais custos '
+              'Por exemplo, se um investimento de R\$ 1.000 passar '
+              'a valer R\$ 1.080, houve uma valorização bruta de '
+              'R\$ 80, equivalente a 8%, antes de eventuais custos '
               'e tributos.'
         },
         {
@@ -168,11 +168,11 @@ class _InteractiveLessonScreenState
           'title': '2. Um exemplo simples',
           'body':
               'Imagine, apenas para fins didáticos, uma aplicação '
-              'de R$ 1.000 com rendimento hipotético de 1% ao mês, '
+              'de R\$ 1.000 com rendimento hipotético de 1% ao mês, '
               'sem aportes, impostos ou taxas.\n\n'
-              'Após o primeiro mês, o saldo seria R$ 1.010. '
+              'Após o primeiro mês, o saldo seria R\$ 1.010. '
               'No segundo mês, os 1% seriam calculados sobre '
-              'R$ 1.010, resultando em R$ 1.020,10.\n\n'
+              'R\$ 1.010, resultando em R\$ 1.020,10.\n\n'
               'A taxa usada neste exemplo não representa uma promessa '
               'de rendimento de qualquer investimento.'
         },
