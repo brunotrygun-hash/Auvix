@@ -399,29 +399,37 @@ class _Module3LessonsScreenState extends State<Module3LessonsScreen> {
         const SizedBox(height: 12),
         ...List.generate(answers.length, (answerIndex) {
           final isSelected = selectedAnswer == answerIndex;
-          final color = !showResult
-              ? AuvixTheme.surface
-              : answerIndex == correct
-                  ? AuvixTheme.accent
-                  : isSelected
-                      ? AuvixTheme.danger
-                      : AuvixTheme.surface;
-
-          return Card(
-            color: color,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
+          Color borderColor = const Color(0xFF183A4A);
+          if (showResult && answerIndex == correct) {
+            borderColor = AuvixTheme.accent;
+          } else if (showResult && isSelected && !isCorrect) {
+            borderColor = AuvixTheme.danger;
+          } else if (isSelected) {
+            borderColor = AuvixTheme.accent;
+          }
+          return Container(
+            margin: const EdgeInsets.only(bottom: 9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: borderColor),
+              color: isSelected ? AuvixTheme.surface2 : Colors.transparent,
+            ),
+            child: RadioListTile<int>(
+              value: answerIndex,
+              groupValue: selectedAnswer,
+              onChanged: showResult ? null : (value) {
+                setState(() => selectedAnswer = value);
+              },
+              activeColor: AuvixTheme.accent,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               title: Text(
-                '${String.fromCharCode(65 + answerIndex)}. ${answers[answerIndex]}',
+                String.fromCharCode(65 + answerIndex) + ". " + answers[answerIndex],
                 style: TextStyle(
                   color: showResult && answerIndex == correct
                       ? AuvixTheme.background
                       : AuvixTheme.text,
                 ),
               ),
-              onTap: showResult
-                  ? null
-                  : () => setState(() => selectedAnswer = answerIndex),
             ),
           );
         }),
