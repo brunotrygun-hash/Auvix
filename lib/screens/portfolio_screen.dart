@@ -5,6 +5,7 @@ import '../services/portfolio_service.dart';
 import '../theme/auvix_theme.dart';
 import '../widgets/market_ticker.dart';
 import '../widgets/home_sections.dart';
+import '../widgets/economy_news_section.dart';
 
 import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
@@ -132,7 +133,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           const SizedBox(height: 22),
           const HomeShortcuts(),
           const SizedBox(height: 22),
-          const MarketNewsSection(),
+          const EconomyNewsSection(),
           const SizedBox(height: 22),
           const LearnInvestingBanner(),
           const SizedBox(height: 22),
