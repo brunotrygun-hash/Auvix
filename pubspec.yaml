@@ -12,6 +12,7 @@ dependencies:
   shared_preferences: ^2.5.3
   http: ^1.5.0
   xml: ^6.5.0
+  html: ^0.15.6
   url_launcher: ^6.3.2
 
 dev_dependencies:

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 
@@ -21,6 +22,34 @@ class EconomyNews {
 }
 
 class EconomyNewsService {
+  static Future<String?> _fetchImage(String articleUrl) async {
+    try {
+      final response = await http.get(
+        Uri.parse(articleUrl),
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
+        },
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) return null;
+
+      final document = html_parser.parse(response.body);
+      final image =
+          document.querySelector("meta[property=\"og:image\"]")?.attributes["content"] ??
+          document.querySelector("meta[name=\"twitter:image\"]")?.attributes["content"];
+
+      if (image == null || image.trim().isEmpty) return null;
+
+      final imageUri = Uri.tryParse(image.trim());
+      if (imageUri == null) return null;
+
+      return imageUri.hasScheme ? imageUri.toString() :
+          Uri.parse(articleUrl).resolveUri(imageUri).toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
   static DateTime? _parseDate(String value) {
     try {
       return HttpDate.parse(value);
@@ -74,12 +103,20 @@ class EconomyNewsService {
               final url = value('link');
               final date = _parseDate(value('pubDate'));
 
-              final imageMatch = RegExp(
-                r'''src=["']([^"']+)["']''',
-                caseSensitive: false,
-              ).firstMatch(description);
+final imageMatch = RegExp(
+  r'''(?:src|srcset|data-src)=["']([^"']+)["']''' ,
+  caseSensitive: false,
+).firstMatch(description);
 
-              final image = imageMatch?.group(1);
+String? image = imageMatch?.group(1);
+
+if (image != null && image.startsWith('//')) {
+  image = 'https:' + image;
+}
+
+if (image != null && !image.startsWith('https://') ) {
+  image = null;
+}
 
               final summary = description
                   .replaceAll(
@@ -132,7 +169,26 @@ class EconomyNewsService {
       final news = unique.values.toList()
         ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
 
-      return news;
+    final visibleNews = news.take(5).toList();
+
+    final enrichedNews = await Future.wait(
+      visibleNews.map((item) async {
+        if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+          return item;
+        }
+        final image = await _fetchImage(item.url);
+        return EconomyNews(
+          title: item.title,
+          summary: item.summary,
+          source: item.source,
+          url: item.url,
+          publishedAt: item.publishedAt,
+          imageUrl: image,
+        );
+      }),
+    );
+
+    return [...enrichedNews, ...news.skip(5)];
     } catch (_) {
       return [];
     } finally {
