@@ -23,6 +23,16 @@ jobs:
       - name: Criar plataforma Android
         run: flutter create --platforms=android .
 
+      - name: Garantir permissao de internet
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i 's|<manifest |<manifest |' "$MANIFEST"
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+          fi
+          grep -n "android.permission.INTERNET" "$MANIFEST"
+
+
       - name: Configurar e testar assinatura
         env:
           KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}
