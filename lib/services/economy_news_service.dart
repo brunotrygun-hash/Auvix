@@ -29,22 +29,34 @@ class EconomyNewsService {
         headers: {
           "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
         },
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode != 200) return null;
 
       final document = html_parser.parse(response.body);
-      final image =
-          document.querySelector("meta[property=\"og:image\"]")?.attributes["content"] ??
-          document.querySelector("meta[name=\"twitter:image\"]")?.attributes["content"];
+      final candidates = [
+        document.querySelector('meta[property="og:image"]')?.attributes["content"],
+        document.querySelector('meta[name="twitter:image"]')?.attributes["content"],
+      ];
 
-      if (image == null || image.trim().isEmpty) return null;
-
-      final imageUri = Uri.tryParse(image.trim());
-      if (imageUri == null) return null;
-
-      return imageUri.hasScheme ? imageUri.toString() :
-          Uri.parse(articleUrl).resolveUri(imageUri).toString();
+      for (final candidate in candidates) {
+        if (candidate == null || candidate.trim().isEmpty) continue;
+        final imageUri = Uri.tryParse(candidate.trim());
+        if (imageUri == null) continue;
+        final resolved = imageUri.hasScheme
+            ? imageUri
+            : Uri.parse(articleUrl).resolveUri(imageUri);
+        final host = resolved.host.toLowerCase();
+        final imagePath = resolved.path.toLowerCase();
+        if (host.contains("google.com") ||
+            host.contains("gstatic.com") ||
+            host.contains("googleusercontent.com") ||
+            imagePath.endsWith(".svg")) {
+          continue;
+        }
+        return resolved.toString();
+      }
+      return null;
     } catch (_) {
       return null;
     }
