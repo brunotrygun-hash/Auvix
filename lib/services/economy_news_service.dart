@@ -29,26 +29,35 @@ class EconomyNewsService {
         headers: {
           "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
         },
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 12));
 
       if (response.statusCode != 200) return null;
 
+      final finalUrl = response.request?.url ?? Uri.parse(articleUrl);
       final document = html_parser.parse(response.body);
-      final candidates = [
+      final candidates = <String?>[
         document.querySelector('meta[property="og:image"]')?.attributes["content"],
+        document.querySelector('meta[property="og:image:secure_url"]')?.attributes["content"],
         document.querySelector('meta[name="twitter:image"]')?.attributes["content"],
+        document.querySelector('meta[name="twitter:image:src"]')?.attributes["content"],
+        document.querySelector('link[rel="image_src"]')?.attributes["href"],
+        document.querySelector('article img')?.attributes["src"],
+        document.querySelector('img')?.attributes["src"],
       ];
 
       for (final candidate in candidates) {
         if (candidate == null || candidate.trim().isEmpty) continue;
-        final imageUri = Uri.tryParse(candidate.trim());
+        final value = candidate.trim().split(" ").first;
+        if (value.startsWith("data:")) continue;
+        final imageUri = Uri.tryParse(value);
         if (imageUri == null) continue;
         final resolved = imageUri.hasScheme
             ? imageUri
-            : Uri.parse(articleUrl).resolveUri(imageUri);
+            : finalUrl.resolveUri(imageUri);
         final host = resolved.host.toLowerCase();
         final imagePath = resolved.path.toLowerCase();
-        if (host.contains("google.com") ||
+        if (!["http", "https"].contains(resolved.scheme) ||
+            host.contains("google.com") ||
             host.contains("gstatic.com") ||
             host.contains("googleusercontent.com") ||
             imagePath.endsWith(".svg")) {
@@ -61,7 +70,6 @@ class EconomyNewsService {
       return null;
     }
   }
-
   static DateTime? _parseDate(String value) {
     try {
       return HttpDate.parse(value);
@@ -114,13 +122,16 @@ class EconomyNewsService {
               final description = value('description');
               final url = value('link');
               final date = _parseDate(value('pubDate'));
+              final mediaContent = item.getElement('media:content')?.getAttribute('url');
+              final mediaThumbnail = item.getElement('media:thumbnail')?.getAttribute('url');
+              final enclosure = item.getElement('enclosure')?.getAttribute('url');
 
 final imageMatch = RegExp(
   r'''(?:src|srcset|data-src)=["']([^"']+)["']''' ,
   caseSensitive: false,
 ).firstMatch(description);
 
-String? image = imageMatch?.group(1);
+String? image = mediaContent ?? mediaThumbnail ?? enclosure ?? imageMatch?.group(1);
 
 if (image != null && image.startsWith('//')) {
   image = 'https:' + image;
