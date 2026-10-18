@@ -76,7 +76,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
                   color: AuvixTheme.accent,
                   size: 30,
                 ),
-                'Não foi possível carregar as notícias agora. Verifique sua conexão e tente atualizar.',
+                'Nenhuma notícia encontrada no momento. Toque no botão de atualizar para tentar novamente.',
               );
             }
 

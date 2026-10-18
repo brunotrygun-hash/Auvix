@@ -59,6 +59,7 @@ class EconomyNewsService {
             ).timeout(const Duration(seconds: 12));
 
             if (response.statusCode != 200) {
+              print("AUVIX noticias: HTTP ${response.statusCode} na pesquisa: $query");
               return <EconomyNews>[];
             }
 
@@ -110,9 +111,11 @@ class EconomyNewsService {
               return news.title.isNotEmpty &&
                   news.url.startsWith('http') &&
                   age.inHours >= -1 &&
-                  age.inHours <= 72;
+                  age.inHours <= 168;
             }).toList();
-          } catch (_) {
+          } catch (e, stackTrace) {
+            print("AUVIX noticias: erro ao consultar RSS: $e");
+            print(stackTrace);
             return <EconomyNews>[];
           }
         }),
