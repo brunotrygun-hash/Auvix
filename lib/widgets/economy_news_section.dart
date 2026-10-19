@@ -13,6 +13,7 @@ class EconomyNewsSection extends StatefulWidget {
 
 class _EconomyNewsSectionState extends State<EconomyNewsSection> {
   late Future<List<EconomyNews>> _newsFuture;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -22,6 +23,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
 
   void _refresh() {
     setState(() {
+      _currentPage = 0;
       _newsFuture = EconomyNewsService.fetchNews();
     });
   }
@@ -79,20 +81,43 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
                 'Nenhuma notícia encontrada no momento. Toque no botão de atualizar para tentar novamente.',
               );
             }
-
             final news = snapshot.data!;
+            final page = _currentPage.clamp(0, news.length - 1);
+
             return Column(
               children: [
-                _featuredCard(news.first),
-                if (news.length > 1) ...[
-                  const SizedBox(height: 12),
-                  ...news.skip(1).take(4).map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _compactCard(item),
-                    ),
+                SizedBox(
+                  height: 110,
+                  child: PageView.builder(
+                    itemCount: news.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return _compactCard(news[index]);
+                    },
                   ),
-                ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(news.length, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: index == page ? 18 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: index == page
+                            ? AuvixTheme.accent
+                            : AuvixTheme.muted,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    );
+                  }),
+                ),
               ],
             );
           },
