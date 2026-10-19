@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,18 +15,49 @@ class EconomyNewsSection extends StatefulWidget {
 class _EconomyNewsSectionState extends State<EconomyNewsSection> {
   late Future<List<EconomyNews>> _newsFuture;
   int _currentPage = 0;
+  Timer? _carouselTimer;
+  final PageController _pageController = PageController();
+  int _pageCount = 0;
 
   @override
   void initState() {
     super.initState();
     _newsFuture = EconomyNewsService.fetchNews();
+    _startCarouselTimer();
+  }
+
+  void _startCarouselTimer() {
+    _carouselTimer?.cancel();
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted || !_pageController.hasClients || _pageCount < 2) {
+        return;
+      }
+      final nextPage = (_currentPage + 1) % _pageCount;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   void _refresh() {
     setState(() {
       _currentPage = 0;
+      _pageCount = 0;
       _newsFuture = EconomyNewsService.fetchNews();
     });
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+    _startCarouselTimer();
+  }
+
+  @override
+  void dispose() {
+    _carouselTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -81,7 +113,8 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
                 'Nenhuma notícia encontrada no momento. Toque no botão de atualizar para tentar novamente.',
               );
             }
-            final news = snapshot.data!;
+            final news = snapshot.data!.take(5).toList();
+              _pageCount = news.length;
             final page = _currentPage.clamp(0, news.length - 1);
 
             return Column(
@@ -89,6 +122,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
                 SizedBox(
                   height: 110,
                   child: PageView.builder(
+                      controller: _pageController,
                     itemCount: news.length,
                     onPageChanged: (index) {
                       setState(() {
@@ -96,7 +130,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
                       });
                     },
                     itemBuilder: (context, index) {
-                      return _compactCard(news[index]);
+                      return _compactCard(news[index], index);
                     },
                   ),
                 ),
@@ -220,7 +254,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
     );
   }
 
-  Widget _compactCard(EconomyNews news) {
+  Widget _compactCard(EconomyNews news, int index) {
     return Material(
       color: AuvixTheme.surface,
       borderRadius: BorderRadius.circular(16),
@@ -235,7 +269,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: _newsImage(news.imageUrl, height: 76, width: 82),
+                child: _auvixIllustration(index, height: 76, width: 82),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -268,6 +302,98 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _auvixIllustration(
+    int index, {
+    double height = 76,
+    double width = 82,
+  }) {
+    late final IconData icon;
+    late final String label;
+    late final List<Color> colors;
+
+    switch (index % 5) {
+      case 0:
+        icon = Icons.account_balance_wallet_rounded;
+        label = 'DINHEIRO';
+        colors = const [Color(0xFF087F68), Color(0xFF061D2B)];
+        break;
+      case 1:
+        icon = Icons.trending_up_rounded;
+        label = 'CRESCIMENTO';
+        colors = const [Color(0xFF075B82), Color(0xFF071A32)];
+        break;
+      case 2:
+        icon = Icons.savings_rounded;
+        label = 'INVESTIR';
+        colors = const [Color(0xFF155E75), Color(0xFF102238)];
+        break;
+      case 3:
+        icon = Icons.query_stats_rounded;
+        label = 'MERCADO';
+        colors = const [Color(0xFF3754A1), Color(0xFF101B36)];
+        break;
+      default:
+        icon = Icons.track_changes_rounded;
+        label = 'PLANEJAR';
+        colors = const [Color(0xFF087F68), Color(0xFF102238)];
+    }
+
+    return Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: 4,
+            top: 10,
+            child: Icon(
+              icon,
+              size: height * 0.53,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+          Positioned(
+            left: 5,
+            top: 5,
+            child: Text(
+              'AUVIX',
+              style: TextStyle(
+                color: AuvixTheme.accent,
+                fontSize: height * 0.12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 5,
+            right: 2,
+            bottom: 5,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: height * 0.105,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -401,6 +527,7 @@ class EconomyNewsDetailScreen extends StatelessWidget {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
