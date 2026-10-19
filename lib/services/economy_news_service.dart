@@ -137,7 +137,7 @@ if (image != null && image.startsWith('//')) {
   image = 'https:' + image;
 }
 
-if (image != null && !image.startsWith('https://') ) {
+if (image != null && !image.startsWith("http://") && !image.startsWith("https://")) {
   image = null;
 }
 
@@ -192,26 +192,36 @@ if (image != null && !image.startsWith('https://') ) {
       final news = unique.values.toList()
         ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
 
-    final visibleNews = news.take(5).toList();
+      final visibleNews = news.take(5).toList();
 
-    final enrichedNews = await Future.wait(
-      visibleNews.map((item) async {
-        if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
-          return item;
-        }
-        final image = await _fetchImage(item.url);
-        return EconomyNews(
-          title: item.title,
-          summary: item.summary,
-          source: item.source,
-          url: item.url,
-          publishedAt: item.publishedAt,
-          imageUrl: image,
-        );
-      }),
-    );
+      final enrichedNews = await Future.wait(
+        visibleNews.map((item) async {
+          if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+            print('AUVIX imagem: URL encontrada no RSS para ${item.source}');
+            return item;
+          }
 
-    return [...enrichedNews, ...news.skip(5)];
+          print('AUVIX imagem: buscando imagem na página de ${item.source}');
+          final image = await _fetchImage(item.url);
+
+          print(
+            image == null
+                ? 'AUVIX imagem: nenhuma imagem encontrada para ${item.source}'
+                : 'AUVIX imagem: URL encontrada na página de ${item.source}',
+          );
+
+          return EconomyNews(
+            title: item.title,
+            summary: item.summary,
+            source: item.source,
+            url: item.url,
+            publishedAt: item.publishedAt,
+            imageUrl: image,
+          );
+        }),
+      );
+
+      return [...enrichedNews, ...news.skip(5)];
     } catch (_) {
       return [];
     } finally {
