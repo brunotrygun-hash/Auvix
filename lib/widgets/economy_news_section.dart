@@ -283,6 +283,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
         height: height,
         width: width,
         fit: BoxFit.cover,
+        headers: const {"User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36"},
         errorBuilder: (_, __, ___) => _imageFallback(height, width),
       );
     }
@@ -420,6 +421,7 @@ class EconomyNewsDetailScreen extends StatelessWidget {
                     news.imageUrl!,
                     height: 210,
                     fit: BoxFit.cover,
+                    headers: const {"User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36"},
                     errorBuilder: (_, __, ___) => _detailFallback(),
                   )
                 : _detailFallback(),
