@@ -221,3 +221,81 @@ class LearnInvestingBanner extends StatelessWidget {
     );
   }
 }
+
+class WealthAndDebtCards extends StatelessWidget {
+  const WealthAndDebtCards({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCard(
+            title: 'Construa seu Patrimônio',
+            subtitle: 'Dê o próximo passo',
+            icon: Icons.trending_up_rounded,
+            accent: AuvixTheme.accent,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildCard(
+            title: 'Controle de Dívidas',
+            subtitle: 'Organize suas contas',
+            icon: Icons.account_balance_rounded,
+            accent: const Color(0xFFFF6577),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color accent,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 145),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AuvixTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.45),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.07),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: accent, size: 29),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

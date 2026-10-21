@@ -11,7 +11,6 @@ import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
 import 'compound_interest_screen.dart';
 import 'money_screen.dart';
-import 'market_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -55,13 +54,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const MoneyScreen(),
-      ),
-    );
-  }
-    void _openMarket() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const MarketScreen(),
       ),
     );
   }
@@ -130,7 +122,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             profitPercent: profitPercent.toDouble(),
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
+          const WealthAndDebtCards(),
+
           const HomeShortcuts(),
           const SizedBox(height: 22),
           const EconomyNewsSection(),
@@ -201,47 +195,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
           const SizedBox(height: 26),
 
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Meus Ativos',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          ...positions.map(
-            (position) => _AssetTile(
-              position: position,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => AssetDetailScreen(
-                      position: position,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          OutlinedButton.icon(
-            onPressed: _addAsset,
-            icon: const Icon(
-              Icons.add_rounded,
-            ),
-            label: const Text(
-              'Adicionar ativo',
-            ),
-          ),
         ],
       ),
 
@@ -250,8 +203,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                onDestinationSelected: (index) {
           if (index == 1) {
             _openMoney();
-          } else if (index == 2) {
-            _openMarket();
           }
         },
         destinations: const [
@@ -272,12 +223,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             label: 'Dinheiro',
           ),
 
-          NavigationDestination(
-            icon: Icon(
-              Icons.show_chart_rounded,
-            ),
-            label: 'Mercado',
-          ),
 
           NavigationDestination(
             icon: Icon(
