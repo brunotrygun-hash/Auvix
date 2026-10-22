@@ -4,525 +4,526 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/auvix_theme.dart';
 
 class InteractiveLessonScreen extends StatefulWidget {
-  const InteractiveLessonScreen({super.key});
+  final int lessonNumber;
+  final String title;
+  final String duration;
+  final String description;
+
+  const InteractiveLessonScreen({
+    super.key,
+    required this.lessonNumber,
+    required this.title,
+    required this.duration,
+    required this.description,
+  });
 
   @override
   State<InteractiveLessonScreen> createState() =>
       _InteractiveLessonScreenState();
 }
 
-class _InteractiveLessonScreenState extends State<InteractiveLessonScreen> {
-  static const String _progressKey = 'lesson_01_completed';
+class _InteractiveLessonScreenState
+    extends State<InteractiveLessonScreen> {
+  int? selectedAnswer;
+  bool answered = false;
 
-  static const List<String> _answers = [
-    'Investir é guardar dinheiro sem nenhum risco.',
-    'Investir é aplicar recursos buscando atingir objetivos financeiros.',
-    'Investir significa comprar somente ações.',
-    'Investir garante lucro em qualquer situação.',
-  ];
-
-  int? _selectedAnswer;
-  bool _answered = false;
-  bool _lessonCompleted = false;
-  bool _loadingProgress = true;
-  bool _savingProgress = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProgress();
-  }
-
-  Future<void> _loadProgress() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final completed = prefs.getBool(_progressKey) ?? false;
-
-      if (!mounted) return;
-
-      setState(() {
-        _lessonCompleted = completed;
-        _loadingProgress = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _loadingProgress = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Não foi possível carregar o progresso da aula.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _completeLesson() async {
-    if (_savingProgress || _lessonCompleted) return;
-
-    setState(() {
-      _savingProgress = true;
-    });
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_progressKey, true);
-
-      if (!mounted) return;
-
-      setState(() {
-        _lessonCompleted = true;
-        _savingProgress = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Aula 01 concluída! Seu progresso foi salvo.',
-          ),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _savingProgress = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Não foi possível salvar. Tente novamente.',
-          ),
-        ),
-      );
-    }
-  }
-
-  void _checkAnswer() {
-    if (_selectedAnswer == null || _answered) return;
-
-    setState(() {
-      _answered = true;
-    });
-  }
-
-  void _tryAgain() {
-    setState(() {
-      _selectedAnswer = null;
-      _answered = false;
-    });
-  }
+  static const Map<int, Map<String, dynamic>> lessonData = {
+    2: {
+      'sections': [
+        {
+          'title': '1. O que é renda fixa?',
+          'body':
+              'Na renda fixa, a remuneração segue regras definidas '
+              'no momento da aplicação. Isso não significa que todo '
+              'produto seja livre de riscos ou que o dinheiro possa '
+              'ser resgatado a qualquer momento.\n\n'
+              'Exemplos incluem títulos públicos do Tesouro Direto '
+              'e CDBs emitidos por bancos. Cada produto possui suas '
+              'próprias condições, custos e riscos.'
+        },
+        {
+          'title': '2. Tipos de remuneração',
+          'body':
+              'Prefixada: a taxa é definida no momento da aplicação.\n\n'
+              'Pós-fixada: o rendimento acompanha um indicador, '
+              'como uma porcentagem do CDI.\n\n'
+              'Híbrida: combina uma taxa fixa com um indicador, '
+              'como a inflação medida pelo IPCA.\n\n'
+              'O resultado efetivo depende das condições do produto '
+              'e, quando aplicável, de impostos e taxas.'
+        },
+        {
+          'title': '3. O que é renda variável?',
+          'body':
+              'Na renda variável, o preço do investimento pode '
+              'oscilar conforme as condições do mercado e os '
+              'resultados dos ativos.\n\n'
+              'Ações, fundos imobiliários e ETFs negociados em Bolsa '
+              'são exemplos. O investidor pode obter ganhos, mas '
+              'também pode perder parte ou todo o capital investido, '
+              'conforme o ativo e as circunstâncias.'
+        },
+        {
+          'title': '4. Como diferenciar?',
+          'body':
+              'Imagine que duas pessoas tenham objetivos financeiros '
+              'diferentes. Uma pode priorizar previsibilidade e '
+              'condições de resgate conhecidas. A outra pode aceitar '
+              'oscilações em busca de valorização no longo prazo.\n\n'
+              'A escolha não deve depender apenas do rendimento '
+              'esperado. Considere também os riscos, o prazo, a '
+              'liquidez e sua capacidade de suportar perdas.'
+        },
+      ],
+      'question':
+          'Qual afirmação sobre renda fixa e renda variável está correta?',
+      'answers': [
+        'Todo investimento de renda fixa é livre de riscos.',
+        'A renda variável sempre oferece lucro no longo prazo.',
+        'Renda fixa tem regras de remuneração definidas, enquanto '
+            'ativos de renda variável podem oscilar de preço.',
+        'Ações são títulos de renda fixa.',
+      ],
+      'correct': 2,
+      'explanation':
+          'Correto! A renda fixa segue regras de remuneração '
+          'definidas, enquanto os preços dos ativos de renda variável '
+          'podem oscilar. As duas modalidades possuem riscos.',
+    },
+    3: {
+      'sections': [
+        {
+          'title': '1. O que é risco?',
+          'body':
+              'Risco é a possibilidade de o resultado de um '
+              'investimento ser diferente do esperado. Dependendo '
+              'do produto, pode haver oscilação de preço, perdas, '
+              'risco de crédito ou dificuldade para resgatar o dinheiro.\n\n'
+              'Entender os riscos ajuda a tomar decisões mais '
+              'conscientes, sem tratar expectativas como garantias.'
+        },
+        {
+          'title': '2. O que é retorno?',
+          'body':
+              'Retorno é o resultado financeiro de um investimento '
+              'em determinado período. Ele pode ser positivo ou '
+              'negativo e deve considerar, quando aplicável, custos '
+              'e impostos.\n\n'
+              'Por exemplo, se um investimento de R$ 1.000 passar '
+              'a valer R$ 1.080, houve uma valorização bruta de '
+              'R$ 80, equivalente a 8%, antes de eventuais custos '
+              'e tributos.'
+        },
+        {
+          'title': '3. A relação entre risco e retorno',
+          'body':
+              'Uma possibilidade de retorno maior normalmente vem '
+              'acompanhada de riscos ou incertezas que precisam ser '
+              'avaliados. Isso não significa que assumir mais risco '
+              'garanta um ganho maior.\n\n'
+              'Compare as características dos investimentos e não '
+              'escolha um produto apenas porque alguém promete '
+              'rendimentos elevados.'
+        },
+        {
+          'title': '4. Conheça seu perfil',
+          'body':
+              'Seu perfil de investidor considera objetivos, prazo, '
+              'conhecimento financeiro e capacidade emocional e '
+              'financeira de lidar com perdas.\n\n'
+              'Uma pessoa que precisa do dinheiro em breve pode ter '
+              'necessidades diferentes de alguém que investe para '
+              'um objetivo distante. O prazo, sozinho, não elimina '
+              'os riscos.'
+        },
+      ],
+      'question':
+          'O que significa dizer que um investimento possui risco?',
+      'answers': [
+        'Que ele necessariamente dará prejuízo.',
+        'Que seu resultado pode ser diferente do esperado, inclusive '
+            'com possibilidade de perdas.',
+        'Que o lucro é garantido, mas pode demorar.',
+        'Que seu preço nunca muda.',
+      ],
+      'correct': 1,
+      'explanation':
+          'Isso mesmo! Risco envolve incerteza sobre os resultados '
+          'e pode incluir perdas. Por isso, é importante conhecer '
+          'o produto antes de investir.',
+    },
+    4: {
+      'sections': [
+        {
+          'title': '1. O que são juros compostos?',
+          'body':
+              'Juros compostos são conhecidos como juros sobre juros. '
+              'Em uma situação com capitalização periódica, os '
+              'rendimentos acumulados passam a fazer parte da base '
+              'sobre a qual os próximos rendimentos são calculados.\n\n'
+              'O resultado depende da taxa, do tempo, dos aportes '
+              'e das condições do investimento.'
+        },
+        {
+          'title': '2. Um exemplo simples',
+          'body':
+              'Imagine, apenas para fins didáticos, uma aplicação '
+              'de R$ 1.000 com rendimento hipotético de 1% ao mês, '
+              'sem aportes, impostos ou taxas.\n\n'
+              'Após o primeiro mês, o saldo seria R$ 1.010. '
+              'No segundo mês, os 1% seriam calculados sobre '
+              'R$ 1.010, resultando em R$ 1.020,10.\n\n'
+              'A taxa usada neste exemplo não representa uma promessa '
+              'de rendimento de qualquer investimento.'
+        },
+        {
+          'title': '3. Tempo e regularidade',
+          'body':
+              'Quando existe rendimento positivo e reinvestimento, '
+              'o efeito dos juros compostos pode se tornar mais '
+              'visível ao longo do tempo.\n\n'
+              'Aportes regulares também podem contribuir para o '
+              'crescimento do patrimônio. Entretanto, investimentos '
+              'reais podem ter oscilações, custos, impostos e períodos '
+              'de rendimento negativo.'
+        },
+        {
+          'title': '4. Não confunda simulação com garantia',
+          'body':
+              'Uma calculadora de juros compostos apresenta um '
+              'resultado matemático baseado nas taxas e nos aportes '
+              'informados. Ela não prevê com certeza o desempenho '
+              'futuro de um investimento.\n\n'
+              'Use simulações para comparar cenários e planejar '
+              'metas, sempre considerando que os resultados reais '
+              'podem ser diferentes.'
+        },
+      ],
+      'question':
+          'Por que os juros compostos são chamados de juros sobre juros?',
+      'answers': [
+        'Porque os rendimentos acumulados podem entrar na base '
+            'de cálculo dos rendimentos seguintes.',
+        'Porque garantem uma taxa positiva todos os meses.',
+        'Porque eliminam todos os riscos do investimento.',
+        'Porque impedem o investidor de fazer novos aportes.',
+      ],
+      'correct': 0,
+      'explanation':
+          'Correto! Na capitalização composta, os rendimentos '
+          'acumulados passam a compor a base dos cálculos seguintes. '
+          'O resultado real depende das condições do investimento.',
+    },
+    5: {
+      'sections': [
+        {
+          'title': '1. Transforme desejos em objetivos',
+          'body':
+              'Um objetivo financeiro deve ser claro e, sempre que '
+              'possível, ter um valor e um prazo definidos.\n\n'
+              'Em vez de apenas dizer “quero juntar dinheiro”, '
+              'você pode estabelecer uma meta, como formar uma '
+              'reserva de emergência ou guardar uma quantia para '
+              'um projeto futuro.'
+        },
+        {
+          'title': '2. Defina o valor e o prazo',
+          'body':
+              'Estime quanto dinheiro será necessário e quando '
+              'pretende utilizá-lo. Depois, avalie quanto consegue '
+              'guardar regularmente sem comprometer despesas '
+              'essenciais.\n\n'
+              'Revise a meta quando sua renda ou suas despesas '
+              'mudarem. Um plano realista costuma ser mais útil '
+              'do que uma meta impossível de manter.'
+        },
+        {
+          'title': '3. Considere a reserva de emergência',
+          'body':
+              'Uma reserva de emergência ajuda a lidar com despesas '
+              'inesperadas, como um conserto urgente ou uma redução '
+              'de renda.\n\n'
+              'Em geral, é importante considerar alternativas com '
+              'liquidez e riscos compatíveis com essa finalidade. '
+              'O valor adequado depende das despesas e da situação '
+              'de cada pessoa.'
+        },
+        {
+          'title': '4. Relacione prazo e investimento',
+          'body':
+              'O dinheiro que será necessário em breve pede atenção '
+              'especial à liquidez e à possibilidade de perdas. '
+              'Objetivos distantes podem permitir outras estratégias, '
+              'conforme o perfil e a capacidade de assumir riscos.\n\n'
+              'Antes de escolher, entenda o produto, os custos, '
+              'as condições de resgate e os riscos envolvidos.'
+        },
+      ],
+      'question':
+          'O que é importante considerar ao definir um objetivo financeiro?',
+      'answers': [
+        'Escolher primeiro o investimento que mais subiu recentemente.',
+        'Ignorar despesas para investir o máximo possível.',
+        'Considerar valor, prazo, capacidade de poupar e necessidade '
+            'de acesso ao dinheiro.',
+        'Investir sempre no mesmo ativo, independentemente do objetivo.',
+      ],
+      'correct': 2,
+      'explanation':
+          'Muito bem! Um objetivo deve considerar valor, prazo e '
+          'sua realidade financeira. Essas informações ajudam a '
+          'avaliar alternativas compatíveis com suas necessidades.',
+    },
+  };
 
   @override
   Widget build(BuildContext context) {
+    final data = lessonData[widget.lessonNumber]!;
+
+    final sections =
+        data['sections'] as List<Map<String, String>>;
+    final answers = data['answers'] as List<String>;
+    final correctAnswer = data['correct'] as int;
+
     return Scaffold(
       backgroundColor: AuvixTheme.background,
       appBar: AppBar(
         backgroundColor: AuvixTheme.background,
         foregroundColor: AuvixTheme.text,
-        title: const Text(
-          'Aula 01 • Fundamentos',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
+        title: Text(
+          'Aula ${widget.lessonNumber.toString().padLeft(2, '0')}',
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
-      body: _loadingProgress
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: AuvixTheme.accent,
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text(
-                  'SEU PRIMEIRO PASSO',
-                  style: TextStyle(
-                    color: AuvixTheme.accent,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'O que são investimentos?',
-                  style: TextStyle(
-                    color: AuvixTheme.text,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Aprenda os conceitos básicos para começar '
-                  'a entender o mundo dos investimentos.',
-                  style: TextStyle(
-                    color: AuvixTheme.muted,
-                    fontSize: 15,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (_lessonCompleted) ...[
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: AuvixTheme.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AuvixTheme.accent,
-                      ),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: AuvixTheme.accent,
-                          size: 26,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Aula concluída! Seu progresso está salvo.',
-                            style: TextStyle(
-                              color: AuvixTheme.accent,
-                              fontWeight: FontWeight.w800,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                _section(
-                  icon: Icons.lightbulb_outline_rounded,
-                  title: '1. O que é investir?',
-                  body:
-                      'Investir é aplicar dinheiro em um ativo ou '
-                      'produto financeiro com a expectativa de '
-                      'obter um resultado futuro. Esse resultado '
-                      'pode ajudar você a realizar objetivos, como '
-                      'formar uma reserva, comprar um imóvel ou '
-                      'complementar a renda no futuro.\n\n'
-                      'Antes de investir, é importante entender '
-                      'como o produto funciona, quais são os custos, '
-                      'os riscos e quando você poderá resgatar '
-                      'o dinheiro.',
-                ),
-                _section(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: '2. Exemplos de investimentos',
-                  body:
-                      '• Poupança: modalidade de depósito com '
-                      'regras próprias de remuneração.\n\n'
-                      '• CDB: título emitido por um banco. A '
-                      'remuneração pode ser prefixada, pós-fixada '
-                      'ou híbrida.\n\n'
-                      '• Ações: representam pequenas parcelas do '
-                      'capital de uma empresa. Seus preços podem '
-                      'subir ou cair.\n\n'
-                      '• Fundos imobiliários (FIIs): fundos que '
-                      'investem em ativos relacionados ao mercado '
-                      'imobiliário. Suas cotas também podem perder '
-                      'valor.\n\n'
-                      'Cada opção possui características, riscos, '
-                      'custos e condições diferentes.',
-                ),
-                _section(
-                  icon: Icons.flag_outlined,
-                  title: '3. Defina seus objetivos',
-                  body:
-                      'Imagine que você queira juntar dinheiro '
-                      'para comprar uma moto daqui a dois anos. '
-                      'Esse objetivo tem um prazo definido e exige '
-                      'planejamento.\n\n'
-                      'Pergunte a si mesmo:\n'
-                      '• Quanto preciso juntar?\n'
-                      '• Quando precisarei do dinheiro?\n'
-                      '• Posso correr o risco de perder parte '
-                      'do valor?\n'
-                      '• Tenho uma reserva para emergências?\n\n'
-                      'O prazo e a necessidade de resgate ajudam '
-                      'a escolher alternativas compatíveis com '
-                      'seus objetivos.',
-                ),
-                _section(
-                  icon: Icons.warning_amber_rounded,
-                  title: '4. Entenda os riscos',
-                  body:
-                      'Nenhum investimento deve ser tratado como '
-                      'uma promessa de lucro. Alguns produtos '
-                      'podem oscilar de preço, apresentar '
-                      'dificuldades de resgate ou envolver risco '
-                      'de crédito.\n\n'
-                      'A diversificação pode ajudar a distribuir '
-                      'riscos, mas não elimina a possibilidade '
-                      'de perdas.\n\n'
-                      'Antes de investir, leia as condições do '
-                      'produto e verifique se ele combina com '
-                      'sua situação financeira.',
-                ),
-                const SizedBox(height: 8),
-                _buildQuiz(),
-                const SizedBox(height: 20),
-                const Text(
-                  'Conteúdo educacional. Não constitui '
-                  'recomendação de compra ou venda de ativos.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AuvixTheme.muted,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildQuiz() {
-    final isCorrect = _selectedAnswer == 1;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AuvixTheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFF183A4A),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.all(20),
         children: [
           const Text(
-            '📝 TESTE SEUS CONHECIMENTOS',
+            'FUNDAMENTOS DOS INVESTIMENTOS',
             style: TextStyle(
               color: AuvixTheme.accent,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Qual alternativa descreve melhor o objetivo '
-            'de um investimento?',
-            style: TextStyle(
-              color: AuvixTheme.text,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              height: 1.5,
+              letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 12),
-          ...List.generate(_answers.length, (index) {
-            final selected = _selectedAnswer == index;
-            final correctOption = index == 1;
-
-            Color borderColor = const Color(0xFF183A4A);
-            Color iconColor = AuvixTheme.muted;
-
-            if (_answered && correctOption) {
-              borderColor = AuvixTheme.accent;
-              iconColor = AuvixTheme.accent;
-            } else if (_answered && selected && !correctOption) {
-              borderColor = AuvixTheme.danger;
-              iconColor = AuvixTheme.danger;
-            } else if (selected) {
-              borderColor = AuvixTheme.accent;
-              iconColor = AuvixTheme.accent;
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 9),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _answered
-                    ? null
-                    : () {
-                        setState(() {
-                          _selectedAnswer = index;
-                        });
-                      },
-                child: Container(
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AuvixTheme.surface2
-                        : AuvixTheme.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: borderColor,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        selected
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: iconColor,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _answers[index],
-                          style: const TextStyle(
-                            color: AuvixTheme.text,
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                      if (_answered && correctOption)
-                        const Icon(
-                          Icons.check_circle,
-                          color: AuvixTheme.accent,
-                          size: 20,
-                        ),
-                      if (_answered && selected && !correctOption)
-                        const Icon(
-                          Icons.cancel,
-                          color: AuvixTheme.danger,
-                          size: 20,
-                        ),
-                    ],
-                  ),
+          Text(
+            widget.title,
+            style: const TextStyle(
+              color: AuvixTheme.text,
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(
+                Icons.schedule_rounded,
+                color: AuvixTheme.muted,
+                size: 18,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                widget.duration,
+                style: const TextStyle(
+                  color: AuvixTheme.muted,
+                  fontSize: 13,
                 ),
               ),
-            );
-          }),
-          if (_answered) ...[
-            const SizedBox(height: 12),
-            Text(
-              isCorrect
-                  ? 'Resposta correta! Investir envolve '
-                      'planejamento e busca de resultados, '
-                      'mas não garante lucro.'
-                  : 'Resposta incorreta. Revise o conteúdo '
-                      'e tente novamente. A alternativa correta '
-                      'é a segunda.',
-              style: TextStyle(
-                color: isCorrect
-                    ? AuvixTheme.accent
-                    : AuvixTheme.danger,
-                height: 1.5,
-                fontWeight: FontWeight.w700,
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            widget.description,
+            style: const TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 15,
+              height: 1.7,
+            ),
+          ),
+          const SizedBox(height: 22),
+          ...sections.map(
+            (section) => _section(
+              title: section['title']!,
+              body: section['body']!,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AuvixTheme.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFF183A4A),
               ),
             ),
-            const SizedBox(height: 14),
-            if (isCorrect && !_lessonCompleted)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _savingProgress
-                      ? null
-                      : _completeLesson,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AuvixTheme.accent,
-                    foregroundColor: AuvixTheme.background,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 15,
-                    ),
-                  ),
-                  child: _savingProgress
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AuvixTheme.background,
-                          ),
-                        )
-                      : const Text(
-                          'Concluir aula e salvar progresso',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                ),
-              ),
-            if (isCorrect && _lessonCompleted)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AuvixTheme.background,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AuvixTheme.accent,
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: AuvixTheme.accent,
-                    ),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Aula concluída e progresso salvo!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AuvixTheme.accent,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (!isCorrect)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _tryAgain,
-                  child: const Text('Tentar novamente'),
-                ),
-              ),
-          ] else ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed:
-                    _selectedAnswer == null ? null : _checkAnswer,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AuvixTheme.accent,
-                  foregroundColor: AuvixTheme.background,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                  ),
-                ),
-                child: const Text(
-                  'Conferir resposta',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '📝 TESTE SEUS CONHECIMENTOS',
                   style: TextStyle(
+                    color: AuvixTheme.accent,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
+                const SizedBox(height: 14),
+                Text(
+                  data['question'] as String,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ...List.generate(answers.length, (index) {
+                  final isSelected = selectedAnswer == index;
+                  final isCorrect = index == correctAnswer;
+
+                  Color borderColor =
+                      const Color(0xFF183A4A);
+
+                  if (answered && isSelected) {
+                    borderColor = isCorrect
+                        ? AuvixTheme.accent
+                        : AuvixTheme.danger;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 9),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: answered
+                          ? null
+                          : () {
+                              setState(() {
+                                selectedAnswer = index;
+                              });
+                            },
+                      child: Container(
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AuvixTheme.surface2
+                              : AuvixTheme.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: borderColor,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: AuvixTheme.accent,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                answers[index],
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                if (answered) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    selectedAnswer == correctAnswer
+                        ? data['explanation'] as String
+                        : 'Resposta incorreta. Revise o conteúdo e '
+                            'tente novamente.',
+                    style: TextStyle(
+                      color: selectedAnswer == correctAnswer
+                          ? AuvixTheme.accent
+                          : AuvixTheme.danger,
+                      height: 1.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (selectedAnswer == correctAnswer)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Voltar ao módulo'),
+                      ),
+                    )
+                  else
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedAnswer = null;
+                          answered = false;
+                        });
+                      },
+                      child: const Text('Tentar novamente'),
+                    ),
+                ] else
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AuvixTheme.accent,
+                        foregroundColor: AuvixTheme.background,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                        ),
+                      ),
+                      onPressed: selectedAnswer == null
+                          ? null
+                          : () {
+                              setState(() {
+                                answered = true;
+                                if (selectedAnswer == correctAnswer) {
+                                  SharedPreferences.getInstance().then((prefs) => prefs.setBool("lesson_${widget.lessonNumber}_completed", true));
+                                }
+                              });
+                            },
+                      child: const Text(
+                        'Conferir resposta',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Conteúdo educacional. Não constitui recomendação '
+            'de compra ou venda de ativos.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
   Widget _section({
-    required IconData icon,
     required String title,
     required String body,
   }) {
@@ -539,25 +540,13 @@ class _InteractiveLessonScreenState extends State<InteractiveLessonScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: AuvixTheme.accent,
-                size: 24,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AuvixTheme.accent,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            title,
+            style: const TextStyle(
+              color: AuvixTheme.accent,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
