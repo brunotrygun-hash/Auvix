@@ -63,26 +63,35 @@ class _LessonsScreenState extends State<LessonsScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = <int>{};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final completed = <int>{};
 
-    for (int lesson = 1; lesson <= fundamentalsLessons.length; lesson++) {
-      final saved = lesson == 1
-          ? prefs.getBool('lesson_01_completed') ??
-              false
-          : prefs.getBool('lesson_${lesson}_completed') ?? false;
+      for (int lesson = 1; lesson <= fundamentalsLessons.length; lesson++) {
+        final saved = lesson == 1
+            ? prefs.getBool('lesson_01_completed') ?? false
+            : prefs.getBool('lesson_${lesson}_completed') ?? false;
 
-      if (saved) completed.add(lesson);
+        if (saved) completed.add(lesson);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        completedLessons
+          ..clear()
+          ..addAll(completed);
+        loadingProgress = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        loadingProgress = false;
+      });
+
+      debugPrint('Erro ao carregar progresso das aulas: $e');
     }
-
-    if (!mounted) return;
-
-    setState(() {
-      completedLessons
-        ..clear()
-        ..addAll(completed);
-      loadingProgress = false;
-    });
   }
 
   Future<void> _openLesson(
