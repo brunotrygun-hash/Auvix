@@ -3,15 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
-class LessonContentScreen extends StatefulWidget {
-  const LessonContentScreen({super.key});
+class InteractiveLessonScreen extends StatefulWidget {
+  const InteractiveLessonScreen({super.key});
 
   @override
-  State<LessonContentScreen> createState() =>
-      _LessonContentScreenState();
+  State<InteractiveLessonScreen> createState() =>
+      _InteractiveLessonScreenState();
 }
 
-class _LessonContentScreenState extends State<LessonContentScreen> {
+class _InteractiveLessonScreenState extends State<InteractiveLessonScreen> {
   static const String _progressKey = 'lesson_01_completed';
 
   static const List<String> _answers = [
