@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 import 'lesson_content.dart';
 import 'interactive_lesson_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LessonsScreen extends StatefulWidget {
   final String moduleNumber;
@@ -20,31 +20,8 @@ class LessonsScreen extends StatefulWidget {
 }
 
 class _LessonsScreenState extends State<LessonsScreen> {
-  bool lesson01Completed = false;
   final Set<int> completedLessons = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProgress();
-  }
-
-  Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getBool("lesson_01_completed") ?? false;
-    final completedNumbers = <int>{};
-    for (var lesson = 2; lesson <= 5; lesson++) {
-      if (prefs.getBool("lesson_${lesson}_completed") ?? false) {
-        completedNumbers.add(lesson);
-      }
-    }
-    if (!mounted) return;
-    setState(() {
-      lesson01Completed = completed;
-      completedLessons.clear();
-      completedLessons.addAll(completedNumbers);
-    });
-  }
+  bool loadingProgress = true;
 
   static const List<Map<String, String>> fundamentalsLessons = [
     {
@@ -80,10 +57,66 @@ class _LessonsScreenState extends State<LessonsScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completed = <int>{};
+
+    for (int lesson = 1; lesson <= fundamentalsLessons.length; lesson++) {
+      final saved = lesson == 1
+          ? prefs.getBool('lesson_01_completed') ??
+              false
+          : prefs.getBool('lesson_${lesson}_completed') ?? false;
+
+      if (saved) completed.add(lesson);
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      completedLessons
+        ..clear()
+        ..addAll(completed);
+      loadingProgress = false;
+    });
+  }
+
+  Future<void> _openLesson(
+    BuildContext context,
+    int lessonNumber,
+    Map<String, String> lesson,
+  ) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => lessonNumber == 1
+            ? const LessonContentScreen()
+            : InteractiveLessonScreen(
+                lessonNumber: lessonNumber,
+                title: lesson['title']!,
+                duration: lesson['duration']!,
+                description: lesson['description']!,
+              ),
+      ),
+    );
+
+    await _loadProgress();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final lessons = widget.moduleNumber == '01'
         ? fundamentalsLessons
         : <Map<String, String>>[];
+
+    final completedCount = completedLessons.length;
+    final progress = lessons.isEmpty
+        ? 0.0
+        : completedCount / lessons.length;
 
     return Scaffold(
       backgroundColor: AuvixTheme.background,
@@ -91,10 +124,8 @@ class _LessonsScreenState extends State<LessonsScreen> {
         backgroundColor: AuvixTheme.background,
         foregroundColor: AuvixTheme.text,
         title: Text(
-          'Módulo $widget.moduleNumber',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
+          'Módulo ${widget.moduleNumber}',
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       body: ListView(
@@ -102,7 +133,8 @@ class _LessonsScreenState extends State<LessonsScreen> {
         children: [
           Text(
             widget.moduleTitle,
-            style: TextStyle(
+            style: const TextStyle(
+              color: AuvixTheme.text,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -115,8 +147,64 @@ class _LessonsScreenState extends State<LessonsScreen> {
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 24),
-          if (lessons.isEmpty)
+          if (lessons.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AuvixTheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF183A4A)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Seu progresso',
+                        style: TextStyle(
+                          color: AuvixTheme.text,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        '$completedCount de ${lessons.length} aulas',
+                        style: const TextStyle(
+                          color: AuvixTheme.accent,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 8,
+                      backgroundColor: AuvixTheme.surface2,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AuvixTheme.accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          if (loadingProgress)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(
+                  color: AuvixTheme.accent,
+                ),
+              ),
+            )
+          else if (lessons.isEmpty)
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -131,87 +219,93 @@ class _LessonsScreenState extends State<LessonsScreen> {
                   height: 1.5,
                 ),
               ),
-            ),
-          ...lessons.asMap().entries.map((entry) {
-            final index = entry.key;
-            final lesson = entry.value;
-            final isCompleted = index == 0 ? lesson01Completed : completedLessons.contains(index + 1);
+            )
+          else
+            ...lessons.asMap().entries.map((entry) {
+              final lessonNumber = entry.key + 1;
+              final lesson = entry.value;
+              final isCompleted = completedLessons.contains(lessonNumber);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Material(
-                color: AuvixTheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Material(
+                  color: AuvixTheme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () async {
-                    await Navigator.push(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _openLesson(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => index == 0 ? const LessonContentScreen() : InteractiveLessonScreen(
-                          lessonNumber: index + 1,
-                          title: lesson['title']!,
-                          duration: lesson['duration']!,
-                          description: lesson['description']!,
-                        ),
-                      ),
-                    );
-                      await _loadProgress();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isCompleted ? AuvixTheme.accent : AuvixTheme.surface2,
-                            borderRadius: BorderRadius.circular(12),
+                      lessonNumber,
+                      lesson,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isCompleted
+                                  ? AuvixTheme.accent
+                                  : AuvixTheme.surface2,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: isCompleted
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: AuvixTheme.background,
+                                  )
+                                : Text(
+                                    lessonNumber.toString().padLeft(2, '0'),
+                                    style: const TextStyle(
+                                      color: AuvixTheme.accent,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                           ),
-                          child: Text(
-                            '${index + 1}'.padLeft(2, '0'),
-                            style: TextStyle(
-                              color: isCompleted ? AuvixTheme.background : AuvixTheme.accent,
-                              fontWeight: FontWeight.w900,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lesson['title']!,
+                                  style: const TextStyle(
+                                    color: AuvixTheme.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isCompleted
+                                      ? '${lesson['duration']} • Concluída'
+                                      : lesson['duration']!,
+                                  style: TextStyle(
+                                    color: isCompleted
+                                        ? AuvixTheme.accent
+                                        : AuvixTheme.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lesson['title']!,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                lesson['duration']!,
-                                style: TextStyle(
-                                  color: AuvixTheme.muted,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            isCompleted
+                                ? Icons.check_circle
+                                : Icons.chevron_right_rounded,
+                            color: AuvixTheme.accent,
                           ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: AuvixTheme.accent,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
           const SizedBox(height: 16),
           const Text(
             'Conteúdo educacional. Não constitui recomendação de compra ou venda de ativos.',
@@ -220,153 +314,6 @@ class _LessonsScreenState extends State<LessonsScreen> {
               color: AuvixTheme.muted,
               fontSize: 12,
               height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class LessonDetailScreen extends StatelessWidget {
-  final int lessonNumber;
-  final String title;
-  final String duration;
-  final String description;
-
-  const LessonDetailScreen({
-    super.key,
-    required this.lessonNumber,
-    required this.title,
-    required this.duration,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AuvixTheme.background,
-      appBar: AppBar(
-        backgroundColor: AuvixTheme.background,
-        foregroundColor: AuvixTheme.text,
-        title: const Text(
-          'Aula',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(22),
-        children: [
-          Text(
-            'AULA ${lessonNumber.toString().padLeft(2, '0')}',
-            style: TextStyle(
-              color: AuvixTheme.accent,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 27,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.schedule_rounded,
-                color: AuvixTheme.muted,
-                size: 18,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                duration,
-                style: TextStyle(
-                  color: AuvixTheme.muted,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AuvixTheme.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFF183A4A),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'O que você vai aprender',
-                  style: TextStyle(
-                    color: AuvixTheme.accent,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.7,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Continue aprendendo',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Leia a explicação, reflita sobre os exemplos e avance '
-            'para a próxima etapa quando estiver pronto.',
-            style: TextStyle(
-              color: AuvixTheme.muted,
-              fontSize: 14,
-              height: 1.7,
-            ),
-          ),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AuvixTheme.accent,
-                foregroundColor: AuvixTheme.background,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'A marcação de aulas concluídas será implementada '
-                      'na próxima etapa.',
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
-                'Concluir leitura',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
             ),
           ),
         ],
