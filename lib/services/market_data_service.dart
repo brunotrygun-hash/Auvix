@@ -125,13 +125,40 @@ class MarketDataService {
   }
 
   /// Meta Selic definida pelo COPOM: série SGS 432.
-  static Future<MarketIndicator> fetchSelic() {
-    return _fetchLatest(
-      series: 432,
-      name: 'SELIC',
-      unit: 'ao ano',
-      dateFormat: 'percent',
+  static Future<MarketIndicator> fetchSelic() async {
+    final today = DateTime.now();
+    final endDate = DateTime(today.year, today.month, today.day);
+    final startDate = endDate.subtract(const Duration(days: 35));
+    String formatDate(DateTime date) =>
+        "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    final uri = Uri.parse('$_baseUrl.432/dados').replace(
+      queryParameters: {
+        'dataInicial': formatDate(startDate),
+        'dataFinal': formatDate(endDate),
+        'formato': 'json',
+      },
     );
+    final response = await _client.get(uri, headers: {
+      'Accept': 'application/json',
+    }).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Não foi possível consultar SELIC (HTTP ${response.statusCode}).');
+    }
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! List || decoded.isEmpty) {
+      throw Exception('Não há dados disponíveis para SELIC.');
+    }
+    for (final entry in decoded.reversed) {
+      if (entry is! Map || entry['valor'] == null || entry['data'] == null) continue;
+      final parts = entry['data'].toString().split('/');
+      if (parts.length != 3) continue;
+      final date = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      if (date.isAfter(endDate)) continue;
+      final value = double.tryParse(entry['valor'].toString().replaceAll(',', '.').trim());
+      if (value == null) continue;
+      return MarketIndicator(name: 'SELIC', value: _formatValue(value, 'percent'), unit: 'ao ano', referenceDate: date);
+    }
+    throw Exception('Não há registro válido de SELIC até hoje.');
   }
 
   /// Dólar americano — venda, série SGS 1.
