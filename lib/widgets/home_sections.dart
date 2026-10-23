@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/auvix_theme.dart';
 import '../screens/learn_investing_screen.dart';
+import '../screens/debt_control_screen.dart';
 
 class HomeShortcuts extends StatelessWidget {
   const HomeShortcuts({super.key});
@@ -239,11 +240,21 @@ class WealthAndDebtCards extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildCard(
-            title: 'Controle de Dívidas',
-            subtitle: 'Organize suas contas',
-            icon: Icons.account_balance_rounded,
-            accent: const Color(0xFFFF6577),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const DebtControlScreen(),
+                ),
+              );
+            },
+            child: _buildCard(
+              title: 'Controle de Dívidas',
+              subtitle: 'Organize suas contas',
+              icon: Icons.account_balance_rounded,
+              accent: const Color(0xFFFF6577),
+            ),
           ),
         ),
       ],
