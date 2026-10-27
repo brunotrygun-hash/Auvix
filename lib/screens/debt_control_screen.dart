@@ -77,6 +77,36 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
     return double.tryParse(value.toString()) ?? 0;
   }
 
+double _totalPaid(Map<String, dynamic> debt) {
+  final payments = debt['payments'];
+
+  if (payments is List) {
+    if (payments.isEmpty && debt['paid'] == true) {
+      return _number(debt['amount']);
+    }
+
+    return payments.fold<double>(
+      0,
+      (total, payment) =>
+          total + _number((payment as Map)['amount']),
+    );
+  }
+
+  // Compatibilidade com dívidas antigas marcadas como pagas.
+  return debt['paid'] == true ? _number(debt['amount']) : 0;
+}
+
+double _remainingBalance(Map<String, dynamic> debt) {
+  final amount = _number(debt['amount']);
+  final paid = _totalPaid(debt);
+
+  return (amount - paid).clamp(0.0, amount).toDouble();
+}
+
+bool _isFullyPaid(Map<String, dynamic> debt) {
+  return _remainingBalance(debt) <= 0.009;
+}
+
   String _money(double value) {
     final fixed = value.toStringAsFixed(2).split('.');
     final integer = fixed[0];
@@ -106,67 +136,87 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
     return DateTime(date.year, date.month);
   }
 
-  double get _totalDebt {
-    return _debts.fold<double>(
-      0,
-      (total, debt) => total + _number(debt['amount']),
-    );
-  }
+double get _totalDebt {
+  return _debts.fold<double>(
+    0,
+    (total, debt) => total + _remainingBalance(debt),
+  );
+}
 
-  double get _paidThisMonth {
-    return _debts.fold<double>(0, (total, debt) {
-      if (debt['paid'] == true) {
-        final date = _date(debt['dueDate']);
-        final now = DateTime.now();
+double get _paidThisMonth {
+  final now = DateTime.now();
 
-        if (date.year == now.year && date.month == now.month) {
-          return total + _number(debt['amount']);
+  return _debts.fold<double>(0, (total, debt) {
+    final payments = debt['payments'];
+
+    if (payments is List && payments.isNotEmpty) {
+      final paidThisMonth = payments.fold<double>(0, (sum, payment) {
+        final paymentDate = _date((payment as Map)['date']);
+
+        if (paymentDate.year == now.year &&
+            paymentDate.month == now.month) {
+          return sum + _number(payment['amount']);
         }
-      }
 
-      return total;
-    });
-  }
+        return sum;
+      });
 
-  double get _dueThisMonth {
-    final now = DateTime.now();
+      return total + paidThisMonth;
+    }
 
-    return _debts.fold<double>(0, (total, debt) {
-      final date = _date(debt['dueDate']);
+    // Compatibilidade com dívidas antigas sem histórico de pagamentos.
+    if (debt['paid'] == true) {
+      final dueDate = _date(debt['dueDate']);
 
-      if (debt['paid'] != true &&
-          date.year == now.year &&
-          date.month == now.month) {
+      if (dueDate.year == now.year && dueDate.month == now.month) {
         return total + _number(debt['amount']);
       }
+    }
 
-      return total;
-    });
-  }
+    return total;
+  });
+}
+
+double get _dueThisMonth {
+  final now = DateTime.now();
+
+  return _debts.fold<double>(0, (total, debt) {
+    final date = _date(debt['dueDate']);
+    final remaining = _remainingBalance(debt);
+
+    if (remaining > 0 &&
+        date.year == now.year &&
+        date.month == now.month) {
+      return total + remaining;
+    }
+
+    return total;
+  });
+}
 
   double get _overdue {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
 
-    return _debts.fold<double>(0, (total, debt) {
-      if (debt['paid'] == true) {
-        return total;
-      }
+  return _debts.fold<double>(0, (total, debt) {
+    final remaining = _remainingBalance(debt);
 
-      final dueDate = _date(debt['dueDate']);
-      final dueDay = DateTime(
-        dueDate.year,
-        dueDate.month,
-        dueDate.day,
-      );
+    if (remaining <= 0) return total;
 
-      if (dueDay.isBefore(today)) {
-        return total + _number(debt['amount']);
-      }
+    final dueDate = _date(debt['dueDate']);
+    final dueDay = DateTime(
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+    );
 
-      return total;
-    });
-  }
+    if (dueDay.isBefore(today)) {
+      return total + remaining;
+    }
+
+    return total;
+  });
+}
 
   Future<void> _openForm({Map<String, dynamic>? existing}) async {
     final nameController = TextEditingController(
@@ -347,6 +397,7 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
                       ).toIso8601String(),
                       'notes': notesController.text.trim(),
                       'paid': existing?['paid'] == true,
+                      'payments': existing?['payments'] ?? [],
                     });
                   },
                   child: const Text('Salvar'),
@@ -431,38 +482,243 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
     await _saveDebts();
   }
 
-  Future<void> _togglePaid(Map<String, dynamic> debt) async {
-    setState(() {
-      debt['paid'] = !(debt['paid'] == true);
-    });
+Future<void> _registerPayment(Map<String, dynamic> debt) async {
+  final amountController = TextEditingController();
+  final notesController = TextEditingController();
+  DateTime paymentDate = DateTime.now();
+  final formKey = GlobalKey<FormState>();
 
-    await _saveDebts();
+  final result = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return AlertDialog(
+            backgroundColor: AuvixTheme.surface,
+            title: const Text('Registrar pagamento'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Saldo restante: ${_money(_remainingBalance(debt))}',
+                        style: const TextStyle(
+                          color: AuvixTheme.accent,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Valor pago (R\$)',
+                        hintText: 'Ex.: 50,00',
+                      ),
+                      validator: (value) {
+                        final amount = double.tryParse(
+                          (value ?? '').trim().replaceAll(',', '.'),
+                        );
 
-    if (!mounted) return;
+                        if (amount == null || amount <= 0) {
+                          return 'Informe um valor válido.';
+                        }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          debt['paid'] == true
-              ? 'Dívida marcada como paga.'
-              : 'Dívida marcada como pendente.',
+                        if (amount > _remainingBalance(debt) + 0.009) {
+                          return 'O valor excede o saldo restante.';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final selected = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: paymentDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+
+                        if (selected != null) {
+                          refreshDialog(() => paymentDate = selected);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_month_rounded),
+                      label: Text(
+                        'Data: ${_formatDate(paymentDate.toIso8601String())}',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Observação (opcional)',
+                        hintText: 'Ex.: pagamento da primeira parcela',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (!formKey.currentState!.validate()) return;
+
+                  Navigator.pop(dialogContext, {
+                    'amount': double.parse(
+                      amountController.text.trim().replaceAll(',', '.'),
+                    ),
+                    'date': DateTime(
+                      paymentDate.year,
+                      paymentDate.month,
+                      paymentDate.day,
+                    ).toIso8601String(),
+                    'notes': notesController.text.trim(),
+                  });
+                },
+                child: const Text('Registrar'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  amountController.dispose();
+  notesController.dispose();
+
+  if (result == null || !mounted) return;
+
+  setState(() {
+    final payments = debt['payments'];
+
+    if (payments is! List) {
+      debt['payments'] = <Map<String, dynamic>>[];
+    }
+
+    (debt['payments'] as List).add(result);
+    debt['paid'] = _isFullyPaid(debt);
+  });
+
+  await _saveDebts();
+
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        _isFullyPaid(debt)
+            ? 'Dívida quitada com sucesso!'
+            : 'Pagamento registrado com sucesso!',
+      ),
+    ),
+  );
+}
+
+  Future<void> _showPaymentHistory(
+    Map<String, dynamic> debt,
+  ) async {
+    final payments = debt['payments'];
+    final history = payments is List
+        ? payments.whereType<Map>().toList()
+        : <Map>[];
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AuvixTheme.surface,
+        title: const Text('Histórico de pagamentos'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: history.isEmpty
+              ? const Text(
+                  'Nenhum pagamento registrado ainda.',
+                  style: TextStyle(color: AuvixTheme.muted),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 20),
+                  itemBuilder: (context, index) {
+                    final payment = history[index];
+                    final amount = _number(payment['amount']);
+                    final date = payment['date']?.toString() ?? '';
+                    final notes = payment['notes']?.toString() ?? '';
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _money(amount),
+                          style: const TextStyle(
+                            color: AuvixTheme.accent,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Data: ${_formatDate(date)}',
+                          style: const TextStyle(
+                            color: AuvixTheme.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (notes.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(notes),
+                        ],
+                      ],
+                    );
+                  },
+                ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Fechar'),
+          ),
+        ],
       ),
     );
   }
+bool _isOverdue(Map<String, dynamic> debt) {
+  if (_remainingBalance(debt) <= 0.009) return false;
 
-  bool _isOverdue(Map<String, dynamic> debt) {
-    if (debt['paid'] == true) return false;
+  final now = DateTime.now();
+  final date = _date(debt['dueDate']);
 
-    final now = DateTime.now();
-    final date = _date(debt['dueDate']);
+  final dueDay = DateTime(date.year, date.month, date.day);
+  final today = DateTime(now.year, now.month, now.day);
 
-    return date.isBefore(DateTime(now.year, now.month, now.day));
-  }
+  return dueDay.isBefore(today);
+}
 
   Color _debtColor(Map<String, dynamic> debt) {
-    if (debt['paid'] == true) return AuvixTheme.accent;
-    if (_isOverdue(debt)) return const Color(0xFFFF6577);
+if (_remainingBalance(debt) <= 0.009) {
+  return AuvixTheme.accent;
+}
+
+    if (_isOverdue(debt)) {
+      return const Color(0xFFFF6577);
+    }
 
     final now = DateTime.now();
     final date = _date(debt['dueDate']);
@@ -518,12 +774,18 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
   }
 
   Widget _debtCard(Map<String, dynamic> debt) {
-    final color = _debtColor(debt);
-    final paid = debt['paid'] == true;
-    final overdue = _isOverdue(debt);
+final color = _debtColor(debt);
+final remaining = _remainingBalance(debt);
+final paid = remaining <= 0.009;
+final hasPayments = _totalPaid(debt) > 0;
+final overdue = _isOverdue(debt);
 
-    final status = paid
-        ? 'PAGA'
+final status = paid
+    ? 'PAGA'
+    : hasPayments
+        ? (overdue
+            ? 'PARCIAL • EM ATRASO'
+            : 'PARCIALMENTE PAGA')
         : overdue
             ? 'EM ATRASO'
             : 'VENCE ${_formatDate(debt['dueDate'])}';
@@ -584,23 +846,29 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
                     _openForm(existing: debt);
                   } else if (value == 'delete') {
                     _deleteDebt(debt);
-                  } else if (value == 'paid') {
-                    _togglePaid(debt);
-                  }
+                   } else if (value == 'payment') {
+  _registerPayment(debt);
+} else if (value == 'history') {
+  _showPaymentHistory(debt);
+}
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'edit',
                     child: Text('Editar'),
                   ),
-                  PopupMenuItem(
-                    value: 'paid',
-                    child: Text(paid ? 'Marcar pendente' : 'Marcar como paga'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Excluir'),
-                  ),
+const PopupMenuItem(
+  value: 'payment',
+  child: Text('Registrar pagamento'),
+),
+const PopupMenuItem(
+  value: 'history',
+  child: Text('Histórico de pagamentos'),
+),
+const PopupMenuItem(
+  value: 'delete',
+  child: Text('Excluir'),
+),
                 ],
               ),
             ],
@@ -619,12 +887,31 @@ class _DebtControlScreenState extends State<DebtControlScreen> {
                         fontSize: 12,
                       ),
                     ),
+                                          const SizedBox(height: 4),
+                    Text(
+                      'Total: ${_money(_number(debt['amount']))}',
+                      style: const TextStyle(
+                        color: AuvixTheme.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Pago: ${_money(_totalPaid(debt))}',
+                      style: const TextStyle(
+                        color: AuvixTheme.accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                      _money(_number(debt['amount'])),
+                      'Restante: ${_money(remaining)}',
                       style: TextStyle(
-                        color: color,
-                        fontSize: 17,
+                        color: remaining <= 0.009
+                            ? AuvixTheme.accent
+                            : color,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
