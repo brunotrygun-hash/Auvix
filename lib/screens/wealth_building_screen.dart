@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -39,6 +40,97 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
   double _goal = 50000;
   double _suggestedContribution = 0;
   bool _hasCalculatedBudget = false;
+
+  bool _isLoadingSavedData = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _contributionController.addListener(_onInputChanged);
+    _rateController.addListener(_onInputChanged);
+    _monthsController.addListener(_onInputChanged);
+    _goalController.addListener(_onInputChanged);
+    _incomeController.addListener(_onInputChanged);
+    _expensesController.addListener(_onInputChanged);
+    _reserveController.addListener(_onInputChanged);
+
+    _loadSavedData();
+  }
+
+  void _onInputChanged() {
+    if (!_isLoadingSavedData) {
+      _saveData();
+    }
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
+    setState(() {
+      _contributionController.text =
+          prefs.getString('wealth_contribution_input') ?? '300';
+
+      _rateController.text = prefs.getString('wealth_rate_input') ?? '0,8';
+
+      _monthsController.text = prefs.getString('wealth_months_input') ?? '60';
+
+      _goalController.text = prefs.getString('wealth_goal_input') ?? '50000';
+
+      _incomeController.text = prefs.getString('wealth_income_input') ?? '';
+
+      _expensesController.text = prefs.getString('wealth_expenses_input') ?? '';
+
+      _reserveController.text = prefs.getString('wealth_reserve_input') ?? '';
+
+      _contribution = prefs.getDouble('wealth_contribution') ?? 300;
+
+      _monthlyRate = prefs.getDouble('wealth_rate') ?? 0.008;
+
+      _months = prefs.getInt('wealth_months') ?? 60;
+
+      _goal = prefs.getDouble('wealth_goal') ?? 50000;
+
+      _suggestedContribution = prefs.getDouble('wealth_suggested') ?? 0;
+
+      _hasCalculatedBudget = prefs.getBool('wealth_budget_calculated') ?? false;
+    });
+
+    _isLoadingSavedData = false;
+  }
+
+  Future<void> _saveData() async {
+    if (_isLoadingSavedData) return;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString(
+      'wealth_contribution_input',
+      _contributionController.text,
+    );
+
+    await prefs.setString('wealth_rate_input', _rateController.text);
+
+    await prefs.setString('wealth_months_input', _monthsController.text);
+
+    await prefs.setString('wealth_goal_input', _goalController.text);
+
+    await prefs.setString('wealth_income_input', _incomeController.text);
+
+    await prefs.setString('wealth_expenses_input', _expensesController.text);
+
+    await prefs.setString('wealth_reserve_input', _reserveController.text);
+
+    await prefs.setDouble('wealth_contribution', _contribution);
+    await prefs.setDouble('wealth_rate', _monthlyRate);
+    await prefs.setInt('wealth_months', _months);
+    await prefs.setDouble('wealth_goal', _goal);
+    await prefs.setDouble('wealth_suggested', _suggestedContribution);
+
+    await prefs.setBool('wealth_budget_calculated', _hasCalculatedBudget);
+  }
 
   double get _totalInvested => _contribution * _months;
 
@@ -110,6 +202,8 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
       _months = months;
       _goal = goal;
     });
+
+    _saveData();
   }
 
   void _calculateSuggestedContribution() {
@@ -139,6 +233,8 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
       _suggestedContribution = available * 0.5;
       _hasCalculatedBudget = true;
     });
+
+    _saveData();
   }
 
   void _showError(String message) {
