@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../theme/auvix_theme.dart';
 import '../screens/learn_investing_screen.dart';
 import '../screens/debt_control_screen.dart';
+import '../screens/wealth_building_screen.dart';
 
 class HomeShortcuts extends StatelessWidget {
   const HomeShortcuts({super.key});
@@ -100,11 +102,7 @@ class MarketNewsSection extends StatelessWidget {
           child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.public_rounded,
-                color: AuvixTheme.accent,
-                size: 30,
-              ),
+              Icon(Icons.public_rounded, color: AuvixTheme.accent, size: 30),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -117,10 +115,7 @@ class MarketNewsSection extends StatelessWidget {
                     SizedBox(height: 5),
                     Text(
                       'Acompanhe notícias sobre juros, inflação, bolsa e câmbio.',
-                      style: TextStyle(
-                        color: AuvixTheme.muted,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
                     ),
                     SizedBox(height: 8),
                     Text(
@@ -155,9 +150,7 @@ class LearnInvestingBanner extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const LearnInvestingScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const LearnInvestingScreen()),
           );
         },
         child: Container(
@@ -165,15 +158,10 @@ class LearnInvestingBanner extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF103847),
-                Color(0xFF0B1C27),
-              ],
+              colors: [Color(0xFF103847), Color(0xFF0B1C27)],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF1B665E),
-            ),
+            border: Border.all(color: const Color(0xFF1B665E)),
           ),
           child: const Row(
             children: [
@@ -201,20 +189,13 @@ class LearnInvestingBanner extends StatelessWidget {
                     SizedBox(height: 8),
                     Text(
                       'Comece do básico e avance no seu ritmo.',
-                      style: TextStyle(
-                        color: AuvixTheme.muted,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
                     ),
                   ],
                 ),
               ),
               SizedBox(width: 10),
-              Icon(
-                Icons.school_rounded,
-                color: AuvixTheme.accent,
-                size: 48,
-              ),
+              Icon(Icons.school_rounded, color: AuvixTheme.accent, size: 48),
             ],
           ),
         ),
@@ -231,11 +212,19 @@ class WealthAndDebtCards extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildCard(
-            title: 'Construa seu Patrimônio',
-            subtitle: 'Dê o próximo passo',
-            icon: Icons.trending_up_rounded,
-            accent: AuvixTheme.accent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WealthBuildingScreen()),
+              );
+            },
+            child: _buildCard(
+              title: 'Construa seu Patrimônio',
+              subtitle: 'Dê o próximo passo',
+              icon: Icons.trending_up_rounded,
+              accent: AuvixTheme.accent,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -244,9 +233,7 @@ class WealthAndDebtCards extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const DebtControlScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const DebtControlScreen()),
               );
             },
             child: _buildCard(
@@ -273,9 +260,7 @@ class WealthAndDebtCards extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuvixTheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
         boxShadow: [
           BoxShadow(
             color: accent.withValues(alpha: 0.07),
@@ -292,18 +277,12 @@ class WealthAndDebtCards extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 5),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: AuvixTheme.muted,
-              fontSize: 11,
-            ),
+            style: const TextStyle(color: AuvixTheme.muted, fontSize: 11),
           ),
         ],
       ),
