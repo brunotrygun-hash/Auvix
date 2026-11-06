@@ -167,7 +167,7 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
     return double.tryParse(parsed);
   }
 
-  void _simulate() {
+  Future<void> _simulate() async {
     final contribution = _readNumber(_contributionController.text);
     final rate = _readNumber(_rateController.text);
     final months = int.tryParse(_monthsController.text.trim());
@@ -203,10 +203,10 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
       _goal = goal;
     });
 
-    _saveData();
+    await _saveData();
   }
 
-  void _calculateSuggestedContribution() {
+  Future<void> _calculateSuggestedContribution() async {
     final income = _readNumber(_incomeController.text);
     final expenses = _readNumber(_expensesController.text);
     final reserve = _readNumber(_reserveController.text);
@@ -234,7 +234,7 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
       _hasCalculatedBudget = true;
     });
 
-    _saveData();
+    await _saveData();
   }
 
   void _showError(String message) {

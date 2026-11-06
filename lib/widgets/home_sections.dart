@@ -205,7 +205,12 @@ class LearnInvestingBanner extends StatelessWidget {
 }
 
 class WealthAndDebtCards extends StatelessWidget {
-  const WealthAndDebtCards({super.key});
+  final VoidCallback? onWealthUpdated;
+
+  const WealthAndDebtCards({
+    super.key,
+    this.onWealthUpdated,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,10 +219,11 @@ class WealthAndDebtCards extends StatelessWidget {
         Expanded(
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              Navigator.of(context).push(
+            onTap: () async {
+              await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const WealthBuildingScreen()),
               );
+              onWealthUpdated?.call();
             },
             child: _buildCard(
               title: 'Construa seu Patrimônio',

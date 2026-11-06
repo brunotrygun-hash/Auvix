@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/asset_position.dart';
 import '../services/portfolio_service.dart';
@@ -22,10 +24,36 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> {
   late List<AssetPosition> positions;
 
+  double _wealthContribution = 300;
+  double _wealthRate = 0.008;
+  int _wealthMonths = 60;
+  double _wealthGoal = 50000;
+  bool _hasWealthData = false;
+
   @override
   void initState() {
     super.initState();
     positions = PortfolioService.demoPortfolio();
+    _loadWealthData();
+  }
+
+  Future<void> _loadWealthData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
+    setState(() {
+      _wealthContribution =
+          prefs.getDouble('wealth_contribution') ?? 300;
+
+      _wealthRate = prefs.getDouble('wealth_rate') ?? 0.008;
+
+      _wealthMonths = prefs.getInt('wealth_months') ?? 60;
+
+      _wealthGoal = prefs.getDouble('wealth_goal') ?? 50000;
+
+      _hasWealthData = prefs.containsKey('wealth_contribution');
+    });
   }
 
   double get total =>
@@ -120,10 +148,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             total: total,
             profit: profit,
             profitPercent: profitPercent.toDouble(),
+            contribution: _wealthContribution,
+            monthlyRate: _wealthRate,
+            months: _wealthMonths,
+            goal: _wealthGoal,
+            hasWealthData: _hasWealthData,
           ),
 
           const SizedBox(height: 18),
-          const WealthAndDebtCards(),
+          WealthAndDebtCards(onWealthUpdated: _loadWealthData),
 
           const HomeShortcuts(),
           const SizedBox(height: 22),
@@ -247,15 +280,81 @@ class _PortfolioCard extends StatelessWidget {
   final double total;
   final double profit;
   final double profitPercent;
+  final double contribution;
+  final double monthlyRate;
+  final int months;
+  final double goal;
+  final bool hasWealthData;
 
   const _PortfolioCard({
     required this.total,
     required this.profit,
     required this.profitPercent,
+    required this.contribution,
+    required this.monthlyRate,
+    required this.months,
+    required this.goal,
+    required this.hasWealthData,
   });
 
   String money(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  double get totalInvested => contribution * months;
+
+  double get futureValue {
+    if (monthlyRate == 0) return totalInvested;
+
+    return contribution *
+        ((math.pow(1 + monthlyRate, months).toDouble() - 1) /
+            monthlyRate);
+  }
+
+  double get interestEarned => futureValue - totalInvested;
+
+  List<double> get chartValues {
+    final values = <double>[];
+
+    for (int i = 1; i <= 12; i++) {
+      final month = (months * i / 12).ceil().clamp(1, months);
+
+      final value = monthlyRate == 0
+          ? contribution * month
+          : contribution *
+              ((math.pow(1 + monthlyRate, month).toDouble() - 1) /
+                  monthlyRate);
+
+      values.add(value);
+    }
+
+    return values;
+  }
+
+  Widget _indicator(String label, String value, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -274,13 +373,9 @@ class _PortfolioCard extends StatelessWidget {
         children: [
           const Text(
             'Patrimônio total',
-            style: TextStyle(
-              color: AuvixTheme.muted,
-            ),
+            style: TextStyle(color: AuvixTheme.muted),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             money(total),
             style: const TextStyle(
@@ -288,9 +383,7 @@ class _PortfolioCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-
           const SizedBox(height: 6),
-
           Text(
             '▲ +${money(profit)} '
             '(${profitPercent.toStringAsFixed(2).replaceAll('.', ',')}%)',
@@ -299,14 +392,76 @@ class _PortfolioCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-
+          if (hasWealthData) ...[
+            const SizedBox(height: 18),
+            const Divider(color: Color(0xFF183A4A)),
+            const SizedBox(height: 10),
+            const Text(
+              'PROJEÇÃO DO SEU PATRIMÔNIO',
+              style: TextStyle(
+                color: AuvixTheme.muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              money(futureValue),
+              style: const TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+                color: AuvixTheme.accent,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _indicator(
+                  'Aportado',
+                  money(totalInvested),
+                  const Color(0xFF19E6B0),
+                ),
+                _indicator(
+                  'Juros',
+                  money(interestEarned),
+                  const Color(0xFFB58AFF),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _indicator(
+                  'Prazo',
+                  '$months meses',
+                  const Color(0xFF55B9FF),
+                ),
+                _indicator(
+                  'Meta',
+                  money(goal),
+                  const Color(0xFFFF9278),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 18),
-
           SizedBox(
             height: 70,
-            child: CustomPaint(
-              painter: _MiniChartPainter(),
-            ),
+            child: hasWealthData
+                ? CustomPaint(
+                    size: Size.infinite,
+                    painter: _MiniChartPainter(chartValues),
+                  )
+                : const Center(
+                    child: Text(
+                      'Configure sua projeção para visualizar o gráfico.',
+                      style: TextStyle(
+                        color: AuvixTheme.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -315,40 +470,43 @@ class _PortfolioCard extends StatelessWidget {
 }
 
 class _MiniChartPainter extends CustomPainter {
+  final List<double> values;
+
+  _MiniChartPainter(this.values);
+
   @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2 || size.width <= 0 || size.height <= 0) {
+      return;
+    }
+
+    double minValue = values.first;
+    double maxValue = values.first;
+
+    for (final value in values) {
+      if (value < minValue) minValue = value;
+      if (value > maxValue) maxValue = value;
+    }
+
+    final range = maxValue - minValue;
+
     final paint = Paint()
       ..color = AuvixTheme.accent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-
-    final points = [
-      0.05,
-      0.24,
-      0.18,
-      0.38,
-      0.31,
-      0.48,
-      0.43,
-      0.62,
-      0.57,
-      0.72,
-      0.68,
-      0.91,
-    ];
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
 
-    for (int i = 0; i < points.length; i++) {
-      final x = size.width *
-          i /
-          (points.length - 1);
+    for (int i = 0; i < values.length; i++) {
+      final x = size.width * i / (values.length - 1);
 
-      final y = size.height *
-          (1 - points[i]);
+      final normalized = range == 0
+          ? 0.5
+          : (values[i] - minValue) / range;
+
+      final y = size.height * (0.9 - normalized * 0.8);
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -361,10 +519,8 @@ class _MiniChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
+  bool shouldRepaint(covariant _MiniChartPainter oldDelegate) {
+    return true;
   }
 }
 

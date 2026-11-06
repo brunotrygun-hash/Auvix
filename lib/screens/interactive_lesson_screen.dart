@@ -487,14 +487,28 @@ class _InteractiveLessonScreenState
                       ),
                       onPressed: selectedAnswer == null
                           ? null
-                          : () {
+                          : () async {
                               setState(() {
                                 answered = true;
-                                if (selectedAnswer == correctAnswer) {
-                                  SharedPreferences.getInstance().then((prefs) => prefs.setBool("lesson_${widget.lessonNumber}_completed", true));
-                                }
                               });
+
+                              if (selectedAnswer == correctAnswer) {
+                                try {
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+
+                                  await prefs.setBool(
+                                    'lesson_${widget.lessonNumber}_completed',
+                                    true,
+                                  );
+                                } catch (e) {
+                                  debugPrint(
+                                    'Erro ao salvar progresso da aula: $e',
+                                  );
+                                }
+                              }
                             },
+
                       child: const Text(
                         'Conferir resposta',
                         style: TextStyle(
