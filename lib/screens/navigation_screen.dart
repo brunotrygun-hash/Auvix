@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 import 'portfolio_screen.dart';
@@ -64,39 +65,196 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-class AlertsScreen extends StatelessWidget {
+class _AuvixAnnouncement {
+  final String id;
+  final String category;
+  final String title;
+  final String message;
+  final String date;
+
+  const _AuvixAnnouncement({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.message,
+    required this.date,
+  });
+}
+
+class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Alertas')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+  State<AlertsScreen> createState() => _AlertsScreenState();
+}
+
+class _AlertsScreenState extends State<AlertsScreen> {
+  static const String _storageKey = 'auvix_read_announcement_ids';
+
+  // Os comunicados oficiais serão cadastrados aqui quando existirem.
+  static const List<_AuvixAnnouncement> _announcements = [];
+
+  Set<String> _readIds = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReadAnnouncements();
+  }
+
+  Future<void> _loadReadAnnouncements() async {
+    final preferences = await SharedPreferences.getInstance();
+    final savedIds = preferences.getStringList(_storageKey) ?? [];
+
+    if (!mounted) return;
+
+    setState(() {
+      _readIds = savedIds.toSet();
+      _loading = false;
+    });
+  }
+
+  Future<void> _markRead(String id) async {
+    if (_readIds.contains(id)) return;
+
+    setState(() {
+      _readIds.add(id);
+    });
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(_storageKey, _readIds.toList());
+  }
+
+  Future<void> _markAllRead() async {
+    setState(() {
+      _readIds.addAll(_announcements.map((item) => item.id));
+    });
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(_storageKey, _readIds.toList());
+  }
+
+  Future<void> _openAnnouncement(_AuvixAnnouncement item) async {
+    await _markRead(item.id);
+
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AuvixTheme.surface,
+        title: Text(item.title),
+        content: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.notifications_none_rounded,
-                size: 58,
-                color: AuvixTheme.accent,
+              Text(
+                '${item.category} • ${item.date}',
+                style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Nenhum alerta no momento',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Quando houver novidades importantes, elas aparecerão aqui.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AuvixTheme.muted),
-              ),
+              const SizedBox(height: 12),
+              Text(item.message),
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Fechar'),
+          ),
+        ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = _announcements
+        .where((item) => !_readIds.contains(item.id))
+        .length;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Alertas')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _announcements.isEmpty
+          ? _buildEmptyState()
+          : _buildAnnouncementList(unreadCount),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.notifications_none_rounded,
+              size: 64,
+              color: AuvixTheme.accent,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Nenhum comunicado no momento',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Quando houver uma atualização, novidade ou novo recurso '
+              'do AUVIX, o comunicado aparecerá aqui.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AuvixTheme.muted, height: 1.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementList(int unreadCount) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Comunicados oficiais',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            if (unreadCount > 0)
+              TextButton(
+                onPressed: _markAllRead,
+                child: const Text('Marcar todos como lidos'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (final item in _announcements)
+          Card(
+            color: AuvixTheme.surface,
+            child: ListTile(
+              leading: Icon(
+                item.category == 'Atualização'
+                    ? Icons.system_update_rounded
+                    : Icons.campaign_outlined,
+                color: AuvixTheme.accent,
+              ),
+              title: Text(item.title),
+              subtitle: Text('${item.category} • ${item.date}'),
+              trailing: _readIds.contains(item.id)
+                  ? Icon(Icons.check_circle_outline, color: AuvixTheme.muted)
+                  : Icon(Icons.circle, color: AuvixTheme.accent, size: 11),
+              onTap: () => _openAnnouncement(item),
+            ),
+          ),
+      ],
     );
   }
 }
