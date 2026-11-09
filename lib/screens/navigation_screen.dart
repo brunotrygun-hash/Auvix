@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 import 'portfolio_screen.dart';
 import 'money_screen.dart';
+import 'login_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -259,10 +261,68 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-class MoreScreen extends StatelessWidget {
+class MoreScreen extends StatefulWidget {
   final ValueChanged<String> onOpenPage;
 
   const MoreScreen({super.key, required this.onOpenPage});
+
+  @override
+  State<MoreScreen> createState() => _MoreScreenState();
+}
+
+class _MoreScreenState extends State<MoreScreen> {
+  bool _isSigningOut = false;
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sair da conta?'),
+        content: const Text(
+          'Você precisará entrar novamente para acessar o AUVIX.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _logout();
+    }
+  }
+
+  Future<void> _logout() async {
+    setState(() => _isSigningOut = true);
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() => _isSigningOut = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível sair da conta. Tente novamente.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,9 +347,24 @@ class MoreScreen extends StatelessWidget {
                 leading: Icon(item.$2, color: AuvixTheme.accent),
                 title: Text(item.$1),
                 trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => onOpenPage(item.$1),
+                onTap: () => widget.onOpenPage(item.$1),
               ),
             ),
+          const SizedBox(height: 16),
+          Card(
+            color: AuvixTheme.surface,
+            child: ListTile(
+              leading: const Icon(
+                Icons.logout_rounded,
+                color: Colors.redAccent,
+              ),
+              title: Text(
+                _isSigningOut ? 'Saindo...' : 'Sair da conta',
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+              onTap: _isSigningOut ? null : _confirmLogout,
+            ),
+          ),
         ],
       ),
     );
@@ -343,16 +418,17 @@ class _LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '3. Onde os dados ficam armazenados',
-      'Na versão atual, as informações cadastradas ficam armazenadas localmente '
-          'no espaço de dados do aplicativo no dispositivo do usuário. '
-          'O AUVIX não possui, nesta versão, sistema de contas reais, sincronização em nuvem '
-          'ou serviço próprio de armazenamento remoto dos dados financeiros.',
+      'O cadastro e a autenticação da conta são realizados pelo serviço Supabase. '
+          'Os dados financeiros e demais informações cadastradas no aplicativo '
+          'permanecem armazenados localmente no dispositivo do usuário nesta versão. '
+          'Ainda não há sincronização desses dados financeiros com a nuvem.',
     ),
     (
-      '4. Login em modo demonstração',
-      'A tela de entrada funciona em modo demonstração. O e-mail e a senha digitados '
-          'não são validados por um servidor e não criam uma conta real. '
-          'Portanto, não utilize senhas pessoais ou reutilizadas de outros serviços nessa tela.',
+      '4. Cadastro e autenticação',
+      'O AUVIX permite criar uma conta e entrar com e-mail e senha por meio do Supabase. '
+          'As informações necessárias à autenticação são processadas por esse serviço externo, '
+          'conforme suas próprias práticas e políticas de privacidade. '
+          'O usuário deve utilizar uma senha forte e evitar reutilizar senhas de outros serviços.',
     ),
     (
       '5. Serviços externos',
@@ -372,17 +448,22 @@ class _LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '7. Segurança e cuidados do usuário',
-      'Os dados ficam no armazenamento privado do aplicativo no dispositivo. '
-          'A versão atual não oferece criptografia própria dos dados financeiros nem autenticação real. '
+      'O acesso à conta utiliza autenticação fornecida pelo Supabase. '
+          'Os dados financeiros cadastrados permanecem no armazenamento privado '
+          'do aplicativo no dispositivo. A versão atual não oferece criptografia própria '
+          'desses dados nem sincronização financeira em nuvem. '
           'Recomendamos proteger o aparelho com bloqueio de tela, manter o sistema atualizado '
           'e evitar compartilhar o dispositivo com pessoas não autorizadas.',
     ),
     (
-      '8. Exclusão dos dados',
-      'Como os dados ficam armazenados localmente, o usuário pode apagá-los por meio '
-          'das configurações do Android, limpando os dados do aplicativo, ou desinstalando-o. '
-          'Essas ações podem causar a perda das informações cadastradas. '
-          'A versão atual não oferece uma função de exclusão de conta, pois não há contas reais.',
+      '8. Exclusão dos dados e da conta',
+      'Os dados financeiros armazenados localmente podem ser apagados nas configurações '
+          'do Android, limpando os dados do aplicativo ou desinstalando-o. '
+          'Essas ações podem causar a perda das informações cadastradas, mas não excluem '
+          'automaticamente a conta de autenticação. '
+          'A versão atual não oferece exclusão de conta diretamente pelo aplicativo. '
+          'Para solicitar a exclusão da conta, entre em contato pelo e-mail '
+          'techalkstore@gmail.com.',
     ),
     (
       '9. Direitos do titular',
@@ -397,7 +478,7 @@ class _LegalDocumentScreen extends StatelessWidget {
           'ou quando houver mudanças legais ou operacionais. A versão mais recente será '
           'disponibilizada no próprio aplicativo.',
     ),
-    ('Última atualização', '8 de novembro de 2026.'),
+    ('Última atualização', '9 de novembro de 2026.'),
   ];
 
   static const _termsSections = <(String, String)>[
@@ -412,10 +493,11 @@ class _LegalDocumentScreen extends StatelessWidget {
           'Caso não concorde com as condições, deverá deixar de utilizar o aplicativo.',
     ),
     (
-      '3. Modo demonstração',
-      'A versão atual possui uma tela de entrada demonstrativa. '
-          'O preenchimento de e-mail e senha não representa autenticação, '
-          'criação de conta ou validação de identidade.',
+      '3. Cadastro e autenticação',
+      'O AUVIX exige cadastro e autenticação com e-mail e senha por meio do Supabase '
+          'para acessar as funcionalidades protegidas. O usuário deve utilizar '
+          'credenciais próprias e manter sua senha em segurança. '
+          'O acesso depende da disponibilidade do serviço de autenticação.',
     ),
     (
       '4. Responsabilidade pelas informações',
@@ -475,7 +557,7 @@ class _LegalDocumentScreen extends StatelessWidget {
       'Dúvidas, sugestões ou solicitações relacionadas ao AUVIX podem ser encaminhadas para '
           'techalkstore@gmail.com. Responsável pelo aplicativo: Bruno Fernandes.',
     ),
-    ('Última atualização', '8 de novembro de 2026.'),
+    ('Última atualização', '9 de novembro de 2026.'),
   ];
 
   @override
