@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/auvix_theme.dart';
 import 'navigation_screen.dart';
@@ -13,7 +14,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
   bool obscure = true;
+  bool isCreatingAccount = false;
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -22,10 +26,106 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _openApp() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
     );
+  }
+
+  String _friendlyAuthError(AuthException error) {
+    final message = error.message.toLowerCase();
+
+    if (message.contains('invalid login credentials')) {
+      return 'E-mail ou senha incorretos.';
+    }
+
+    if (message.contains('email not confirmed')) {
+      return 'Confirme seu e-mail antes de entrar.';
+    }
+
+    if (message.contains('user already registered')) {
+      return 'Este e-mail já possui uma conta. Faça login.';
+    }
+
+    if (message.contains('password should be at least')) {
+      return 'A senha não atende ao tamanho mínimo exigido.';
+    }
+
+    return error.message;
+  }
+
+  Future<void> _submit() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || !email.contains('@')) {
+      _showMessage('Informe um endereço de e-mail válido.');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showMessage('Informe sua senha.');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final auth = Supabase.instance.client.auth;
+
+      if (isCreatingAccount) {
+        final response = await auth.signUp(email: email, password: password);
+
+        if (!mounted) return;
+
+        if (response.session != null) {
+          _showMessage('Conta criada com sucesso!');
+          _openApp();
+        } else {
+          setState(() => isCreatingAccount = false);
+          _showMessage(
+            'Conta criada! Confira seu e-mail para confirmar o cadastro.',
+          );
+        }
+      } else {
+        final response = await auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+
+        if (!mounted) return;
+
+        if (response.session != null) {
+          _openApp();
+        } else {
+          _showMessage('Não foi possível iniciar a sessão.');
+        }
+      }
+    } on AuthException catch (error) {
+      _showMessage(_friendlyAuthError(error));
+    } catch (_) {
+      _showMessage(
+        'Não foi possível conectar. Verifique sua internet e tente novamente.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  void _toggleMode() {
+    setState(() {
+      isCreatingAccount = !isCreatingAccount;
+    });
   }
 
   @override
@@ -43,19 +143,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 30),
                   const _AuvixBrand(large: true),
                   const SizedBox(height: 56),
-                  const Text(
-                    'Entrar',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                  Text(
+                    isCreatingAccount ? 'Criar conta' : 'Entrar',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Acompanhe seus investimentos em um só lugar.',
-                    style: TextStyle(color: AuvixTheme.muted),
+                  Text(
+                    isCreatingAccount
+                        ? 'Crie sua conta para começar a usar o AUVIX.'
+                        : 'Acompanhe seus investimentos em um só lugar.',
+                    style: const TextStyle(color: AuvixTheme.muted),
                   ),
                   const SizedBox(height: 28),
                   TextField(
                     controller: emailController,
+                    enabled: !isLoading,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
                     decoration: const InputDecoration(
                       labelText: 'E-mail',
                       hintText: 'voce@email.com',
@@ -64,7 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: passwordController,
+                    enabled: !isLoading,
                     obscureText: obscure,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!isLoading) _submit();
+                    },
                     decoration: InputDecoration(
                       labelText: 'Senha',
                       suffixIcon: IconButton(
@@ -79,21 +192,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 22),
                   ElevatedButton(
-                    onPressed: _login,
-                    child: const Text('Entrar'),
+                    onPressed: isLoading ? null : _submit,
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isCreatingAccount ? 'Criar conta' : 'Entrar'),
                   ),
                   const SizedBox(height: 18),
                   TextButton(
-                    onPressed: () {},
-                    child: const Text('Criar conta'),
-                  ),
-                  const SizedBox(height: 42),
-                  const Center(
+                    onPressed: isLoading ? null : _toggleMode,
                     child: Text(
-                      'Modo demonstração: qualquer e-mail e senha entram.',
-                      style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+                      isCreatingAccount
+                          ? 'Já tenho uma conta. Entrar'
+                          : 'Criar conta',
                     ),
                   ),
+                  const SizedBox(height: 42),
                 ],
               ),
             ),
