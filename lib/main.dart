@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/auvix_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/navigation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +35,9 @@ class AuvixApp extends StatelessWidget {
       title: 'AUVIX',
       debugShowCheckedModeBanner: false,
       theme: AuvixTheme.dark(),
-      home: const OnboardingScreen(),
+      home: Supabase.instance.client.auth.currentSession != null
+          ? const MainNavigationScreen()
+          : const OnboardingScreen(),
     );
   }
 }
