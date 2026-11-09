@@ -14,7 +14,6 @@ import '../widgets/economy_news_section.dart';
 import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
 import 'compound_interest_screen.dart';
-import 'money_screen.dart';
 import 'my_assets_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {
@@ -77,11 +76,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         .push<void>(MaterialPageRoute(builder: (_) => const MyAssetsScreen()));
 
     await _loadPersonalAssetsTotal();
-  }
-
-  void _openMoney() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const MoneyScreen()));
   }
 
   @override
@@ -190,34 +184,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           ),
 
           const SizedBox(height: 26),
-        ],
-      ),
-
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (index) {
-          if (index == 1) {
-            _openMoney();
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Início',
-          ),
-
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            label: 'Dinheiro',
-          ),
-
-          NavigationDestination(
-            icon: Icon(Icons.notifications_none_rounded),
-            label: 'Alertas',
-          ),
-
-          NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'Mais'),
         ],
       ),
     );
