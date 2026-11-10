@@ -382,6 +382,10 @@ class MoreDetailScreen extends StatelessWidget {
       return _LegalDocumentScreen(title: title);
     }
 
+    if (title == 'Sobre o AUVIX') {
+      return const _AboutAuvixScreen();
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Center(
@@ -391,6 +395,223 @@ class MoreDetailScreen extends StatelessWidget {
             'Esta seção será preparada na próxima etapa.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AuvixTheme.muted, fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AboutAuvixScreen extends StatelessWidget {
+  const _AboutAuvixScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AuvixTheme.background,
+      appBar: AppBar(title: const Text('Sobre o AUVIX')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AuvixTheme.surface2,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'A',
+                    style: TextStyle(
+                      color: AuvixTheme.accent,
+                      fontSize: 54,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'AUVIX',
+                  style: TextStyle(
+                    color: AuvixTheme.accent,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sua vida financeira em evolução.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Organização • Patrimônio • Investimentos',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          const _AboutSectionTitle(title: 'Sobre o aplicativo'),
+          const Text(
+            'O AUVIX foi desenvolvido para ajudar você a organizar sua '
+            'vida financeira, acompanhar seus investimentos, construir '
+            'patrimônio e planejar seus objetivos com mais conhecimento.',
+            style: TextStyle(fontSize: 15, height: 1.6),
+          ),
+          const SizedBox(height: 24),
+          const _AboutSectionTitle(title: 'O que você encontra no AUVIX'),
+          const _AboutFeature(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Acompanhamento de investimentos',
+            description: 'Organize e acompanhe seus ativos e sua carteira.',
+          ),
+          const _AboutFeature(
+            icon: Icons.trending_up_rounded,
+            title: 'Construção de patrimônio',
+            description: 'Planeje aportes, metas e projeções financeiras.',
+          ),
+          const _AboutFeature(
+            icon: Icons.account_balance_outlined,
+            title: 'Controle financeiro',
+            description: 'Organize seu dinheiro e acompanhe suas dívidas.',
+          ),
+          const _AboutFeature(
+            icon: Icons.notifications_none_rounded,
+            title: 'Alertas e economia',
+            description: 'Acompanhe informações econômicas e de mercado.',
+          ),
+          const _AboutFeature(
+            icon: Icons.school_outlined,
+            title: 'Educação financeira',
+            description: 'Aprenda conceitos para tomar decisões conscientes.',
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AuvixTheme.surface,
+              border: Border.all(
+                color: AuvixTheme.accent.withValues(alpha: 0.7),
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: AuvixTheme.accent),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Importante',
+                        style: TextStyle(
+                          color: AuvixTheme.accent,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'O AUVIX não é uma plataforma de investimentos, '
+                  'corretora ou instituição financeira. É um aplicativo '
+                  'de organização e acompanhamento financeiro, destinado '
+                  'a auxiliar o usuário no controle de seus investimentos, '
+                  'patrimônio e planejamento financeiro.\n\n'
+                  'O aplicativo não realiza operações de compra ou venda '
+                  'de ativos nem recebe ou movimenta recursos financeiros '
+                  'dos usuários.',
+                  style: TextStyle(fontSize: 14, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              'Desenvolvido para aproximar você dos seus objetivos financeiros.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              'Versão 0.1.0',
+              style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+            ),
+          ),
+          Center(
+            child: Text(
+              'Contato: techalkstore@gmail.com',
+              style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutSectionTitle extends StatelessWidget {
+  final String title;
+
+  const _AboutSectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AuvixTheme.accent,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class _AboutFeature extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _AboutFeature({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AuvixTheme.surface,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: Icon(icon, color: AuvixTheme.accent, size: 28),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            description,
+            style: TextStyle(color: AuvixTheme.muted, height: 1.4),
           ),
         ),
       ),
