@@ -12,34 +12,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const List<IconData> _avatarIcons = [
-    Icons.person_rounded,
-    Icons.face_rounded,
-    Icons.mood_rounded,
-    Icons.sentiment_satisfied_rounded,
-    Icons.emoji_emotions_rounded,
-    Icons.account_circle_rounded,
-    Icons.person_outline_rounded,
-    Icons.tag_faces_rounded,
-    Icons.child_friendly_rounded,
-    Icons.support_agent_rounded,
-    Icons.psychology_rounded,
-    Icons.workspace_premium_rounded,
-  ];
-
-  static const List<Color> _avatarColors = [
-    Color(0xFF19E6B0),
-    Color(0xFF56B4E9),
-    Color(0xFFB39DDB),
-    Color(0xFFFFB74D),
-    Color(0xFFF48FB1),
-    Color(0xFF80CBC4),
-    Color(0xFF90CAF9),
-    Color(0xFFFF8A65),
-    Color(0xFFAED581),
-    Color(0xFFCE93D8),
-    Color(0xFFFFD54F),
-    Color(0xFF80DEEA),
+  static const List<String> _avatarAssets = [
+    'assets/avatars/avatar_01.png',
+    'assets/avatars/avatar_02.png',
+    'assets/avatars/avatar_03.png',
+    'assets/avatars/avatar_04.png',
+    'assets/avatars/avatar_05.png',
+    'assets/avatars/avatar_06.png',
+    'assets/avatars/avatar_07.png',
+    'assets/avatars/avatar_08.png',
+    'assets/avatars/avatar_09.png',
+    'assets/avatars/avatar_10.png',
+    'assets/avatars/avatar_11.png',
+    'assets/avatars/avatar_12.png',
   ];
 
   int _selectedAvatar = 0;
@@ -66,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     setState(() {
-      _selectedAvatar = savedAvatar >= 0 && savedAvatar < _avatarIcons.length
+      _selectedAvatar = savedAvatar >= 0 && savedAvatar < _avatarAssets.length
           ? savedAvatar
           : 0;
       _loading = false;
@@ -132,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 220,
                       child: GridView.builder(
                         physics: const BouncingScrollPhysics(),
-                        itemCount: _avatarIcons.length,
+                        itemCount: _avatarAssets.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 4,
@@ -161,10 +146,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  Icon(
-                                    _avatarIcons[index],
-                                    size: 38,
-                                    color: _avatarColors[index],
+                                  Padding(
+                                    padding: const EdgeInsets.all(5),
+                                    child: Image.asset(
+                                      _avatarAssets[index],
+                                      fit: BoxFit.contain,
+                                      width: 50,
+                                      height: 50,
+                                    ),
                                   ),
                                   if (selected)
                                     const Positioned(
@@ -293,10 +282,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: Icon(
-                          _avatarIcons[_selectedAvatar],
-                          size: 62,
-                          color: _avatarColors[_selectedAvatar],
+                        child: ClipOval(
+                          child: Image.asset(
+                            _avatarAssets[_selectedAvatar],
+                            width: 108,
+                            height: 108,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
