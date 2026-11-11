@@ -6,6 +6,7 @@ import '../theme/auvix_theme.dart';
 import 'portfolio_screen.dart';
 import 'money_screen.dart';
 import 'login_screen.dart';
+import 'profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -378,6 +379,10 @@ class MoreDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (title == 'Perfil') {
+      return const ProfileScreen();
+    }
+
     if (title == 'Política de Privacidade' || title == 'Termos de Uso') {
       return _LegalDocumentScreen(title: title);
     }
