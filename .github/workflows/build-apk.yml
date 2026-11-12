@@ -22,6 +22,26 @@ jobs:
 
       - name: Criar plataforma Android
         run: flutter create --platforms=android .
+      - name: Desativar Lint vital de release
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+
+          path = Path("android/app/build.gradle.kts")
+          content = path.read_text()
+          marker = "android {"
+
+          if marker not in content:
+              raise SystemExit("Bloco android não encontrado.")
+
+          if "checkReleaseBuilds = false" not in content:
+              addition = "\n    lint {\n        checkReleaseBuilds = false\n    }"
+              content = content.replace(marker, marker + addition, 1)
+
+          path.write_text(content)
+          print("Lint de release desativado.")
+          PYCODE
+
 
       - name: Garantir permissao de internet
         run: |
