@@ -20,7 +20,12 @@ import 'compound_interest_screen.dart';
 import 'my_assets_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {
-  const PortfolioScreen({super.key});
+  const PortfolioScreen({
+    super.key,
+    this.onOpenAlerts,
+  });
+
+  final VoidCallback? onOpenAlerts;
 
   @override
   State<PortfolioScreen> createState() => PortfolioScreenState();
@@ -140,7 +145,7 @@ class PortfolioScreenState extends State<PortfolioScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: widget.onOpenAlerts,
             icon: const Icon(Icons.notifications_none_rounded),
           ),
           Padding(

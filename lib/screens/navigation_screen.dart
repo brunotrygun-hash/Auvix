@@ -22,7 +22,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       GlobalKey<PortfolioScreenState>();
 
   late final List<Widget> _pages = [
-    PortfolioScreen(key: _homeKey),
+    PortfolioScreen(
+      key: _homeKey,
+      onOpenAlerts: () {
+        setState(() => _selectedIndex = 2);
+      },
+    ),
     const MoneyScreen(),
     const AlertsScreen(),
     MoreScreen(onOpenPage: _openPage),
