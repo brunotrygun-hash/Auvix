@@ -34,9 +34,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   ];
 
   Future<void> _openPage(String title) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MoreDetailScreen(title: title)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => MoreDetailScreen(title: title)));
 
     if (!mounted) return;
     if (title == 'Perfil') {
@@ -404,6 +404,10 @@ class MoreDetailScreen extends StatelessWidget {
       return const _AboutAuvixScreen();
     }
 
+    if (title == 'Ajuda') {
+      return const HelpScreen();
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Center(
@@ -418,6 +422,233 @@ class MoreDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class HelpScreen extends StatelessWidget {
+  const HelpScreen({super.key});
+
+  static const List<_HelpTopic> _topics = [
+    _HelpTopic(
+      icon: Icons.rocket_launch_outlined,
+      title: 'Primeiros passos',
+      description:
+          'Conheça as áreas do AUVIX. Use a navegação inferior para acessar '
+          'Início, Dinheiro, Alertas e Mais. No menu Mais você encontra '
+          'outras opções do aplicativo.',
+    ),
+    _HelpTopic(
+      icon: Icons.trending_up_rounded,
+      title: 'Carteira de investimentos',
+      description:
+          'Na tela inicial, acompanhe os dados da sua carteira e os ativos '
+          'cadastrados. Você também pode acessar as opções de consulta e '
+          'detalhamento disponíveis na própria carteira.',
+    ),
+    _HelpTopic(
+      icon: Icons.account_balance_wallet_outlined,
+      title: 'Meus Bens',
+      description:
+          'Use a área Meus Bens para cadastrar e organizar bens, como casa '
+          'e veículo. Informe o nome e o valor para acompanhar seu patrimônio '
+          'cadastrado.',
+    ),
+    _HelpTopic(
+      icon: Icons.savings_outlined,
+      title: 'Dinheiro',
+      description:
+          'Registre valores reservados, defina uma meta e informe quanto '
+          'pretende guardar por mês. Você pode acompanhar os valores '
+          'apresentados nessa área.',
+    ),
+    _HelpTopic(
+      icon: Icons.show_chart_rounded,
+      title: 'Construa seu Patrimônio',
+      description:
+          'Informe o aporte mensal, a taxa mensal estimada, o prazo em meses '
+          'e sua meta financeira. Toque em Simular meu patrimônio para '
+          'visualizar uma projeção. Os resultados são estimativas e não '
+          'representam garantia de rentabilidade.',
+    ),
+    _HelpTopic(
+      icon: Icons.receipt_long_outlined,
+      title: 'Controle de Dívidas',
+      description:
+          'Cadastre suas dívidas, informe os dados solicitados e acompanhe '
+          'os valores. A área também permite registrar pagamentos e consultar '
+          'o histórico.',
+    ),
+    _HelpTopic(
+      icon: Icons.school_outlined,
+      title: 'Aprenda a Investir',
+      description:
+          'Acesse a área de aprendizado para consultar as aulas e os módulos '
+          'disponíveis no AUVIX. Siga o conteúdo apresentado em cada aula '
+          'e utilize as atividades de aprendizado quando disponíveis.',
+    ),
+    _HelpTopic(
+      icon: Icons.notifications_none_rounded,
+      title: 'Alertas',
+      description:
+          'Consulte os comunicados oficiais do AUVIX sobre novidades, '
+          'atualizações e novos recursos. Quando não houver comunicados '
+          'publicados, a tela informará que não há novidades no momento.',
+    ),
+  ];
+
+  static const List<_HelpTopic> _questions = [
+    _HelpTopic(
+      icon: Icons.lock_outline_rounded,
+      title: 'Meus dados ficam salvos?',
+      description:
+          'O salvamento depende da funcionalidade utilizada. O AUVIX usa '
+          'recursos de conta e armazenamento para manter informações. '
+          'Confira sempre se a operação foi concluída com sucesso.',
+    ),
+    _HelpTopic(
+      icon: Icons.calculate_outlined,
+      title: 'A simulação garante o resultado?',
+      description:
+          'Não. A simulação de patrimônio é apenas uma estimativa baseada '
+          'nos valores e na taxa informados. Resultados reais podem ser '
+          'diferentes e investimentos envolvem riscos.',
+    ),
+    _HelpTopic(
+      icon: Icons.support_agent_outlined,
+      title: 'Como pedir ajuda?',
+      description:
+          'Se encontrar um problema, descreva o que estava fazendo e '
+          'qual mensagem apareceu. Essas informações ajudam a identificar '
+          'a dificuldade.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AuvixTheme.background,
+      appBar: AppBar(title: const Text('Ajuda')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AuvixTheme.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AuvixTheme.accent.withValues(alpha: 0.35),
+              ),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.help_outline_rounded,
+                  color: AuvixTheme.accent,
+                  size: 34,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Como podemos ajudar?',
+                  style: TextStyle(
+                    color: AuvixTheme.text,
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Encontre orientações para aproveitar melhor os recursos '
+                  'do AUVIX.',
+                  style: TextStyle(
+                    color: AuvixTheme.muted,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'GUIA DO APLICATIVO',
+            style: TextStyle(
+              color: AuvixTheme.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final topic in _topics) _buildTopic(topic),
+          const SizedBox(height: 22),
+          const Text(
+            'DÚVIDAS FREQUENTES',
+            style: TextStyle(
+              color: AuvixTheme.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final question in _questions) _buildTopic(question),
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'AUVIX • Sua vida financeira em evolução',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopic(_HelpTopic topic) {
+    return Card(
+      color: AuvixTheme.surface,
+      margin: const EdgeInsets.only(bottom: 9),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: ExpansionTile(
+        leading: Icon(topic.icon, color: AuvixTheme.accent),
+        title: Text(
+          topic.title,
+          style: const TextStyle(
+            color: AuvixTheme.text,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconColor: AuvixTheme.accent,
+        collapsedIconColor: AuvixTheme.muted,
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            topic.description,
+            style: const TextStyle(
+              color: AuvixTheme.muted,
+              fontSize: 14,
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpTopic {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _HelpTopic({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
 }
 
 class _AboutAuvixScreen extends StatelessWidget {
