@@ -5,6 +5,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'profile_screen.dart';
+
 import '../models/asset_position.dart';
 import '../services/portfolio_service.dart';
 import '../theme/auvix_theme.dart';
@@ -72,6 +74,16 @@ class PortfolioScreenState extends State<PortfolioScreen> {
     });
   }
 
+  Future<void> _openProfile() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+
+    if (mounted) {
+      await refreshProfileData();
+    }
+  }
+
   double get total => positions.fold(0, (sum, item) => sum + item.currentValue);
 
   double get invested => positions.fold(0, (sum, item) => sum + item.invested);
@@ -133,20 +145,24 @@ class PortfolioScreenState extends State<PortfolioScreen> {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AuvixTheme.surface2,
-                shape: BoxShape.circle,
-                border: Border.all(color: AuvixTheme.accent, width: 1.8),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  _avatarAssets[_profileAvatar],
-                  fit: BoxFit.contain,
-                  width: 34,
-                  height: 34,
+            child: InkWell(
+              onTap: _openProfile,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AuvixTheme.surface2,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AuvixTheme.accent, width: 1.8),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    _avatarAssets[_profileAvatar],
+                    fit: BoxFit.contain,
+                    width: 34,
+                    height: 34,
+                  ),
                 ),
               ),
             ),
