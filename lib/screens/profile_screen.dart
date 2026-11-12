@@ -28,8 +28,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ];
 
   int _selectedAvatar = 0;
+  String _name = '';
   bool _loading = true;
   bool _sendingReset = false;
+  bool _savingName = false;
 
   User? get _user => Supabase.instance.client.auth.currentUser;
 
@@ -42,6 +44,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadAvatar();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    final savedName = _user?.userMetadata?['full_name'];
+    if (!mounted) return;
+    setState(() {
+      _name = savedName is String ? savedName.trim() : '';
+    });
+  }
+
+  Future<void> _editName() async {
+    final controller = TextEditingController(text: _name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AuvixTheme.surface,
+        title: const Text('Seu nome'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Nome'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              controller.text.trim(),
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName == null) return;
+    if (newName.isEmpty) {
+      _showMessage('Informe um nome válido.');
+      return;
+    }
+    if (_user == null) return;
+    setState(() => _savingName = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'full_name': newName}),
+      );
+      if (!mounted) return;
+      setState(() => _name = newName);
+      _showMessage('Nome atualizado com sucesso!');
+    } on AuthException catch (error) {
+      if (mounted) _showMessage('Não foi possível salvar: ${error.message}');
+    } catch (_) {
+      if (mounted) _showMessage('Erro ao salvar o nome. Tente novamente.');
+    } finally {
+      if (mounted) setState(() => _savingName = false);
+    }
   }
 
   Future<void> _loadAvatar() async {
@@ -292,12 +355,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Minha conta',
+                      Text(
+                        _name.isEmpty ? 'Minha conta' : _name,
+
                         style: TextStyle(
                           fontSize: 23,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      OutlinedButton.icon(
+                        onPressed: _savingName ? null : _editName,
+                        icon: const Icon(Icons.edit_rounded),
+                        label: Text(_name.isEmpty ? 'Adicionar nome' : 'Editar nome'),
                       ),
                       const SizedBox(height: 6),
                       Text(

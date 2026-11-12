@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'dart:convert';
 
@@ -20,18 +21,55 @@ class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
 
   @override
-  State<PortfolioScreen> createState() => _PortfolioScreenState();
+  State<PortfolioScreen> createState() => PortfolioScreenState();
 }
 
-class _PortfolioScreenState extends State<PortfolioScreen> {
+class PortfolioScreenState extends State<PortfolioScreen> {
+  static const List<String> _avatarAssets = [
+    'assets/avatars/avatar_01.png',
+    'assets/avatars/avatar_02.png',
+    'assets/avatars/avatar_03.png',
+    'assets/avatars/avatar_04.png',
+    'assets/avatars/avatar_05.png',
+    'assets/avatars/avatar_06.png',
+    'assets/avatars/avatar_07.png',
+    'assets/avatars/avatar_08.png',
+    'assets/avatars/avatar_09.png',
+    'assets/avatars/avatar_10.png',
+    'assets/avatars/avatar_11.png',
+    'assets/avatars/avatar_12.png',
+  ];
+
   late List<AssetPosition> positions;
   double _personalAssetsTotal = 0;
+  String _profileName = '';
+  int _profileAvatar = 0;
 
   @override
   void initState() {
     super.initState();
     positions = PortfolioService.demoPortfolio();
     _loadPersonalAssetsTotal();
+    refreshProfileData();
+  }
+
+  Future<void> refreshProfileData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    final preferences = await SharedPreferences.getInstance();
+
+    final savedName = user?.userMetadata?['full_name'];
+    final userId = user?.id ?? 'unknown';
+    final savedAvatar =
+        preferences.getInt('auvix_profile_avatar_$userId') ?? 0;
+
+    if (!mounted) return;
+
+    setState(() {
+      _profileName = savedName is String ? savedName.trim() : '';
+      _profileAvatar = savedAvatar >= 0 && savedAvatar < _avatarAssets.length
+          ? savedAvatar
+          : 0;
+    });
   }
 
   double get total => positions.fold(0, (sum, item) => sum + item.currentValue);
@@ -93,18 +131,53 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             onPressed: () {},
             icon: const Icon(Icons.notifications_none_rounded),
           ),
-          const Padding(
-            padding: EdgeInsets.only(right: 14),
-            child: CircleAvatar(radius: 17, child: Text('BF')),
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AuvixTheme.surface2,
+                shape: BoxShape.circle,
+                border: Border.all(color: AuvixTheme.accent, width: 1.8),
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  _avatarAssets[_profileAvatar],
+                  fit: BoxFit.contain,
+                  width: 34,
+                  height: 34,
+                ),
+              ),
+            ),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
         children: [
-          const Text(
-            'Olá! 👋',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          Row(
+            children: [
+              const Text(
+                'Olá! 👋',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              ),
+              if (_profileName.isNotEmpty) ...[
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    _profileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AuvixTheme.accent,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
 
           const SizedBox(height: 4),

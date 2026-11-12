@@ -12,6 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -21,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -63,8 +65,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    final fullName = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text;
+
+    if (isCreatingAccount && fullName.isEmpty) {
+      _showMessage('Informe seu nome para criar a conta.');
+      return;
+    }
 
     if (email.isEmpty || !email.contains('@')) {
       _showMessage('Informe um endereço de e-mail válido.');
@@ -82,7 +90,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final auth = Supabase.instance.client.auth;
 
       if (isCreatingAccount) {
-        final response = await auth.signUp(email: email, password: password);
+        final response = await auth.signUp(
+          email: email,
+          password: password,
+          data: {'full_name': fullName},
+        );
 
         if (!mounted) return;
 
@@ -158,6 +170,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: AuvixTheme.muted),
                   ),
                   const SizedBox(height: 28),
+                  if (isCreatingAccount) ...[
+                    TextField(
+                      controller: nameController,
+                      enabled: !isLoading,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome',
+                        hintText: 'Como deseja ser chamado?',
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   TextField(
                     controller: emailController,
                     enabled: !isLoading,

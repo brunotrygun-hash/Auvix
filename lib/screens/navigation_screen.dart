@@ -18,17 +18,25 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
+  final GlobalKey<PortfolioScreenState> _homeKey =
+      GlobalKey<PortfolioScreenState>();
+
   late final List<Widget> _pages = [
-    const PortfolioScreen(),
+    PortfolioScreen(key: _homeKey),
     const MoneyScreen(),
     const AlertsScreen(),
     MoreScreen(onOpenPage: _openPage),
   ];
 
-  void _openPage(String title) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => MoreDetailScreen(title: title)));
+  Future<void> _openPage(String title) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MoreDetailScreen(title: title)),
+    );
+
+    if (!mounted) return;
+    if (title == 'Perfil') {
+      await _homeKey.currentState?.refreshProfileData();
+    }
   }
 
   @override
