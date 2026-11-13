@@ -17,6 +17,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
+  final ValueNotifier<int> _unreadCount = ValueNotifier<int>(0);
 
   final GlobalKey<PortfolioScreenState> _homeKey =
       GlobalKey<PortfolioScreenState>();
@@ -24,14 +25,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late final List<Widget> _pages = [
     PortfolioScreen(
       key: _homeKey,
+      unreadCount: _unreadCount,
       onOpenAlerts: () {
         setState(() => _selectedIndex = 2);
       },
     ),
     const MoneyScreen(),
-    const AlertsScreen(),
+    AlertsScreen(
+      onUnreadCountChanged: (count) {
+        _unreadCount.value = count;
+      },
+    ),
     MoreScreen(onOpenPage: _openPage),
   ];
+
+  @override
+  void dispose() {
+    _unreadCount.dispose();
+    super.dispose();
+  }
 
   Future<void> _openPage(String title) async {
     await Navigator.of(
@@ -98,7 +110,9 @@ class _AuvixAnnouncement {
 }
 
 class AlertsScreen extends StatefulWidget {
-  const AlertsScreen({super.key});
+  const AlertsScreen({super.key, this.onUnreadCountChanged});
+
+  final ValueChanged<int>? onUnreadCountChanged;
 
   @override
   State<AlertsScreen> createState() => _AlertsScreenState();
@@ -121,6 +135,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   String? _loadError;
 
+  void _notifyUnreadCount() {
+    final count = _announcements
+        .where((item) => !_readIds.contains(item.id))
+        .length;
+    widget.onUnreadCountChanged?.call(count);
+  }
+
   Future<void> _loadAnnouncements() async {
     setState(() {
       _loading = true;
@@ -128,10 +149,17 @@ class _AlertsScreenState extends State<AlertsScreen> {
     });
 
     try {
+      final client = Supabase.instance.client;
+      final user = client.auth.currentUser;
+
+      if (user == null) {
+        throw Exception('Usuário não autenticado.');
+      }
+
       final preferences = await SharedPreferences.getInstance();
       final savedIds = preferences.getStringList(_storageKey) ?? [];
 
-      final rows = await Supabase.instance.client
+      final rows = await client
           .from('official_announcements')
           .select('id, category, title, message, published_at')
           .eq('is_published', true)
@@ -158,13 +186,44 @@ class _AlertsScreenState extends State<AlertsScreen> {
         );
       }).toList();
 
+      final readRows = await client
+          .from('official_announcement_reads')
+          .select('announcement_id')
+          .eq('user_id', user.id);
+
+      final readIds = readRows
+          .map((row) => row['announcement_id'].toString())
+          .toSet();
+
+      // Migra as leituras antigas deste aparelho para a conta conectada.
+      final validIds = announcements.map((item) => item.id).toSet();
+      final legacyIds = savedIds
+          .where((id) => validIds.contains(id) && !readIds.contains(id))
+          .toSet();
+
+      if (legacyIds.isNotEmpty) {
+        await client
+            .from('official_announcement_reads')
+            .upsert(
+              legacyIds
+                  .map((id) => {'announcement_id': id, 'user_id': user.id})
+                  .toList(),
+              onConflict: 'announcement_id,user_id',
+            );
+
+        readIds.addAll(legacyIds);
+      }
+
+      await preferences.remove(_storageKey);
+
       if (!mounted) return;
 
       setState(() {
-        _readIds = savedIds.toSet();
+        _readIds = readIds;
         _announcements = announcements;
         _loading = false;
       });
+      _notifyUnreadCount();
     } catch (error) {
       if (!mounted) return;
 
@@ -199,21 +258,54 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Future<void> _markRead(String id) async {
     if (_readIds.contains(id)) return;
 
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    await Supabase.instance.client.from('official_announcement_reads').upsert({
+      'announcement_id': id,
+      'user_id': user.id,
+    }, onConflict: 'announcement_id,user_id');
+
+    if (!mounted) return;
+
     setState(() {
       _readIds.add(id);
     });
-
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setStringList(_storageKey, _readIds.toList());
+    _notifyUnreadCount();
   }
 
   Future<void> _markAllRead() async {
-    setState(() {
-      _readIds.addAll(_announcements.map((item) => item.id));
-    });
+    final user = Supabase.instance.client.auth.currentUser;
 
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setStringList(_storageKey, _readIds.toList());
+    if (user == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final unreadIds = _announcements
+        .map((item) => item.id)
+        .where((id) => !_readIds.contains(id))
+        .toList();
+
+    if (unreadIds.isEmpty) return;
+
+    await Supabase.instance.client
+        .from('official_announcement_reads')
+        .upsert(
+          unreadIds
+              .map((id) => {'announcement_id': id, 'user_id': user.id})
+              .toList(),
+          onConflict: 'announcement_id,user_id',
+        );
+
+    if (!mounted) return;
+
+    setState(() {
+      _readIds.addAll(unreadIds);
+    });
+    _notifyUnreadCount();
   }
 
   Future<void> _openAnnouncement(_AuvixAnnouncement item) async {

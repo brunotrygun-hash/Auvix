@@ -23,9 +23,11 @@ class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({
     super.key,
     this.onOpenAlerts,
+    required this.unreadCount,
   });
 
   final VoidCallback? onOpenAlerts;
+  final ValueListenable<int> unreadCount;
 
   @override
   State<PortfolioScreen> createState() => PortfolioScreenState();
@@ -66,8 +68,7 @@ class PortfolioScreenState extends State<PortfolioScreen> {
 
     final savedName = user?.userMetadata?['full_name'];
     final userId = user?.id ?? 'unknown';
-    final savedAvatar =
-        preferences.getInt('auvix_profile_avatar_$userId') ?? 0;
+    final savedAvatar = preferences.getInt('auvix_profile_avatar_$userId') ?? 0;
 
     if (!mounted) return;
 
@@ -80,9 +81,8 @@ class PortfolioScreenState extends State<PortfolioScreen> {
   }
 
   Future<void> _openProfile() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-    );
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
 
     if (mounted) {
       await refreshProfileData();
@@ -144,9 +144,44 @@ class PortfolioScreenState extends State<PortfolioScreen> {
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
         ),
         actions: [
-          IconButton(
-            onPressed: widget.onOpenAlerts,
-            icon: const Icon(Icons.notifications_none_rounded),
+          ValueListenableBuilder<int>(
+            valueListenable: widget.unreadCount,
+            builder: (context, count, child) {
+              return IconButton(
+                onPressed: widget.onOpenAlerts,
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded),
+                    if (count > 0)
+                      Positioned(
+                        right: -8,
+                        top: -7,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            count > 99 ? '99+' : '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           Padding(
             padding: const EdgeInsets.only(right: 14),
