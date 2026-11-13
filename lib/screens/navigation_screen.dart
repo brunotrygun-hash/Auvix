@@ -108,7 +108,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   static const String _storageKey = 'auvix_read_announcement_ids';
 
   // Os comunicados oficiais serão cadastrados aqui quando existirem.
-  static const List<_AuvixAnnouncement> _announcements = [];
+  List<_AuvixAnnouncement> _announcements = [];
 
   Set<String> _readIds = {};
   bool _loading = true;
@@ -116,19 +116,86 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadReadAnnouncements();
+    _loadAnnouncements();
   }
 
-  Future<void> _loadReadAnnouncements() async {
-    final preferences = await SharedPreferences.getInstance();
-    final savedIds = preferences.getStringList(_storageKey) ?? [];
+  String? _loadError;
 
-    if (!mounted) return;
-
+  Future<void> _loadAnnouncements() async {
     setState(() {
-      _readIds = savedIds.toSet();
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final savedIds = preferences.getStringList(_storageKey) ?? [];
+
+      final rows = await Supabase.instance.client
+          .from('official_announcements')
+          .select('id, category, title, message, published_at')
+          .eq('is_published', true)
+          .order('published_at', ascending: false);
+
+      final announcements = rows.map((row) {
+        final data = Map<String, dynamic>.from(row);
+        final publishedAt = DateTime.tryParse(
+          data['published_at']?.toString() ?? '',
+        )?.toLocal();
+
+        final date = publishedAt == null
+            ? ''
+            : '${publishedAt.day.toString().padLeft(2, '0')}/'
+                  '${publishedAt.month.toString().padLeft(2, '0')}/'
+                  '${publishedAt.year}';
+
+        return _AuvixAnnouncement(
+          id: data['id'].toString(),
+          category: data['category']?.toString() ?? 'Novidade',
+          title: data['title']?.toString() ?? '',
+          message: data['message']?.toString() ?? '',
+          date: date,
+        );
+      }).toList();
+
+      if (!mounted) return;
+
+      setState(() {
+        _readIds = savedIds.toSet();
+        _announcements = announcements;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _loadError =
+            'Não foi possível carregar os comunicados. '
+            'Verifique sua conexão e tente novamente.';
+        _loading = false;
+      });
+    }
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 56),
+            const SizedBox(height: 16),
+            Text(_loadError!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _loadAnnouncements,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _markRead(String id) async {
@@ -195,6 +262,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       appBar: AppBar(title: const Text('Alertas')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+          ? _buildErrorState()
           : _announcements.isEmpty
           ? _buildEmptyState()
           : _buildAnnouncementList(unreadCount),
