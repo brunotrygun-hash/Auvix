@@ -169,9 +169,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _loadError =
-            'Não foi possível carregar os comunicados. '
-            'Verifique sua conexão e tente novamente.';
+        _loadError = 'Erro ao carregar comunicados: ${error.toString()}';
         _loading = false;
       });
     }
