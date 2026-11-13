@@ -396,6 +396,10 @@ class MoreDetailScreen extends StatelessWidget {
       return const ProfileScreen();
     }
 
+    if (title == 'Configurações') {
+      return const SettingsScreen();
+    }
+
     if (title == 'Política de Privacidade' || title == 'Termos de Uso') {
       return _LegalDocumentScreen(title: title);
     }
@@ -418,6 +422,128 @@ class MoreDetailScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(color: AuvixTheme.muted, fontSize: 16),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  static const String _notificationKey = 'auvix_official_notifications_enabled';
+
+  bool _officialNotificationsEnabled = true;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_notificationKey) ?? true;
+
+    if (!mounted) return;
+
+    setState(() {
+      _officialNotificationsEnabled = enabled;
+      _loading = false;
+    });
+  }
+
+  Future<void> _saveNotificationPreference(bool value) async {
+    setState(() => _officialNotificationsEnabled = value);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notificationKey, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Configurações')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _settingsSectionTitle('Aparência'),
+          Card(
+            color: AuvixTheme.surface,
+            child: const ListTile(
+              leading: Icon(Icons.dark_mode_outlined, color: AuvixTheme.accent),
+              title: Text(
+                'Tema escuro',
+                style: TextStyle(color: AuvixTheme.text),
+              ),
+              subtitle: Text(
+                'O AUVIX utiliza sempre o tema escuro.',
+                style: TextStyle(color: AuvixTheme.muted),
+              ),
+              trailing: Icon(
+                Icons.lock_outline_rounded,
+                color: AuvixTheme.muted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _settingsSectionTitle('Notificações'),
+          Card(
+            color: AuvixTheme.surface,
+            child: SwitchListTile(
+              secondary: const Icon(
+                Icons.notifications_active_outlined,
+                color: AuvixTheme.accent,
+              ),
+              title: const Text(
+                'Comunicados oficiais',
+                style: TextStyle(color: AuvixTheme.text),
+              ),
+              subtitle: Text(
+                _loading
+                    ? 'Carregando preferência...'
+                    : 'Avisos sobre novidades e atualizações do AUVIX.',
+                style: const TextStyle(color: AuvixTheme.muted),
+              ),
+              value: _officialNotificationsEnabled,
+              onChanged: _loading ? null : _saveNotificationPreference,
+              activeThumbColor: AuvixTheme.accent,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              'Essa opção salva sua preferência. O envio de notificações '
+              'ao celular dependerá da integração futura com o serviço '
+              'de notificações do AUVIX.',
+              style: TextStyle(
+                color: AuvixTheme.muted,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _settingsSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AuvixTheme.accent,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
