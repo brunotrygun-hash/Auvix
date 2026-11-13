@@ -7,6 +7,7 @@ import 'portfolio_screen.dart';
 import 'money_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
+import 'admin_announcements_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -445,6 +446,31 @@ class MoreScreen extends StatefulWidget {
 
 class _MoreScreenState extends State<MoreScreen> {
   bool _isSigningOut = false;
+  bool _isAdmin = false;
+  bool _checkingAdmin = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminAccess();
+  }
+
+  Future<void> _checkAdminAccess() async {
+    try {
+      final result = await Supabase.instance.client.rpc('is_auvix_admin');
+      if (!mounted) return;
+      setState(() {
+        _isAdmin = result == true;
+        _checkingAdmin = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isAdmin = false;
+        _checkingAdmin = false;
+      });
+    }
+  }
 
   Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
@@ -523,6 +549,27 @@ class _MoreScreenState extends State<MoreScreen> {
                 onTap: () => widget.onOpenPage(item.$1),
               ),
             ),
+          if (_isAdmin) ...[
+            Card(
+              color: AuvixTheme.surface,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: AuvixTheme.accent,
+                ),
+                title: const Text('Administração AUVIX'),
+                subtitle: const Text("Gerenciar comunicados oficiais"),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminAnnouncementsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Card(
             color: AuvixTheme.surface,
