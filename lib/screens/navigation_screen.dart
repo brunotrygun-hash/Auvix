@@ -76,7 +76,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
             selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'Dinheiro',
+            label: 'Reserva',
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_none_rounded),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/auvix_theme.dart';
+import '../screens/money_screen.dart';
+import '../screens/compound_interest_screen.dart';
+import '../screens/news_screen.dart';
+
 import '../screens/learn_investing_screen.dart';
 import '../screens/debt_control_screen.dart';
 import '../screens/wealth_building_screen.dart';
@@ -10,12 +14,36 @@ class HomeShortcuts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _ShortcutData('Carteira', Icons.account_balance_wallet_rounded),
-      _ShortcutData('Mercado', Icons.show_chart_rounded),
-      _ShortcutData('Calculadora', Icons.calculate_rounded),
-      _ShortcutData('Aprender', Icons.school_rounded),
-      _ShortcutData('Objetivos', Icons.flag_rounded),
+    final items = <({
+      String label,
+      IconData icon,
+      Widget Function() screen,
+    })>[
+      (
+        label: 'Carteira',
+        icon: Icons.account_balance_wallet_rounded,
+        screen: () => const MoneyScreen(),
+      ),
+      (
+        label: 'Notícias',
+        icon: Icons.newspaper_rounded,
+        screen: () => const NewsScreen(),
+      ),
+      (
+        label: 'Calculadora',
+        icon: Icons.calculate_rounded,
+        screen: () => const CompoundInterestScreen(),
+      ),
+      (
+        label: 'Aprender',
+        icon: Icons.school_rounded,
+        screen: () => const LearnInvestingScreen(),
+      ),
+      (
+        label: 'Objetivos',
+        icon: Icons.flag_rounded,
+        screen: () => const WealthBuildingScreen(),
+      ),
     ];
 
     return Column(
@@ -23,55 +51,81 @@ class HomeShortcuts extends StatelessWidget {
       children: [
         const Text(
           'Acesso rápido',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 100,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(items.length, (index) {
               final item = items[index];
+              final colors = Theme.of(context).colorScheme;
 
-              return Container(
-                width: 100,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AuvixTheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF183A4A)),
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: index == items.length - 1 ? 0 : 10,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(item.icon, color: AuvixTheme.accent, size: 27),
-                    const SizedBox(height: 8),
-                    Text(
-                      item.label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                child: SizedBox(
+                  width: 100,
+                  child: Material(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => item.screen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colors.outline.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.icon,
+                              color: const Color(0xFF19E6B0),
+                              size: 25,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.label,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.onSurface,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               );
-            },
+            }),
           ),
         ),
       ],
     );
   }
-}
-
-class _ShortcutData {
-  final String label;
-  final IconData icon;
-
-  const _ShortcutData(this.label, this.icon);
 }
 
 class MarketNewsSection extends StatelessWidget {

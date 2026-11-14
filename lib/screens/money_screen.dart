@@ -318,7 +318,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dinheiro'),
+        title: const Text('Reserva de Emergência'),
         centerTitle: true,
       ),
       body: RefreshIndicator(
