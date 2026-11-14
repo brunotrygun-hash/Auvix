@@ -632,7 +632,7 @@ class EconomyNewsDetailScreen extends StatelessWidget {
               border: Border.all(color: const Color(0xFF183A4A)),
             ),
             child: const Text(
-              'Por que acompanhar?\\n'
+              'Por que acompanhar?\n'
               'Notícias econômicas podem ajudar a compreender o cenário '
               'de juros, inflação, câmbio e mercado. O efeito de cada '
               'acontecimento depende do contexto e não representa, por si só, '
