@@ -93,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final response = await auth.signUp(
           email: email,
           password: password,
+          emailRedirectTo: 'com.example.auvix://login-callback',
           data: {'full_name': fullName},
         );
 

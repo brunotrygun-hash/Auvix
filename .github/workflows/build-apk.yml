@@ -53,6 +53,43 @@ jobs:
           grep -n "android.permission.INTERNET" "$MANIFEST"
 
 
+      - name: Configurar Deep Link AUVIX
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          content = path.read_text()
+
+          anchor = "        </activity>"
+
+          if content.count(anchor) != 1:
+              raise SystemExit("MainActivity não encontrada de forma única.")
+
+          if 'android:scheme="com.example.auvix"' not in content:
+              intent_filter = "\n".join([
+                  '            <intent-filter>',
+                  '                <action android:name="android.intent.action.VIEW" />',
+                  '                <category android:name="android.intent.category.DEFAULT" />',
+                  '                <category android:name="android.intent.category.BROWSABLE" />',
+                  '                <data android:scheme="com.example.auvix" android:host="login-callback" />',
+                  '            </intent-filter>',
+                  ''
+              ])
+
+              updated = content.replace(
+                  anchor,
+                  intent_filter + anchor,
+                  1
+              )
+
+              ET.fromstring(updated)
+              path.write_text(updated)
+
+          print("Deep Link AUVIX configurado com sucesso.")
+          PY
+
       - name: Configurar e testar assinatura
         env:
           KEYSTORE_BASE64: ${{ secrets.AUVIX_KEYSTORE_BASE64 }}

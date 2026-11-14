@@ -74,10 +74,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(
-              dialogContext,
-              controller.text.trim(),
-            ),
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
             child: const Text('Salvar'),
           ),
         ],
@@ -269,7 +267,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _sendingReset = true);
 
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'com.example.auvix://login-callback',
+      );
 
       if (!mounted) return;
 
@@ -367,7 +368,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       OutlinedButton.icon(
                         onPressed: _savingName ? null : _editName,
                         icon: const Icon(Icons.edit_rounded),
-                        label: Text(_name.isEmpty ? 'Adicionar nome' : 'Editar nome'),
+                        label: Text(
+                          _name.isEmpty ? 'Adicionar nome' : 'Editar nome',
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
