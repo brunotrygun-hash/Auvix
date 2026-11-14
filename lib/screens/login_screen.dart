@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/auvix_theme.dart';
 import 'navigation_screen.dart';
+import 'legal_gate_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool obscure = true;
   bool isCreatingAccount = false;
   bool isLoading = false;
+  bool _acceptedLegalDocuments = false;
+
+  static const _termsVersion = '1.0';
+  static const _privacyVersion = '1.0';
 
   @override
   void dispose() {
@@ -38,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _openApp() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      MaterialPageRoute(builder: (_) => const LegalGateScreen()),
     );
   }
 
@@ -74,6 +79,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    if (isCreatingAccount && !_acceptedLegalDocuments) {
+      _showMessage(
+        'Você precisa aceitar os Termos de Uso e a Política de Privacidade.',
+      );
+      return;
+    }
+
     if (email.isEmpty || !email.contains('@')) {
       _showMessage('Informe um endereço de e-mail válido.');
       return;
@@ -94,7 +106,12 @@ class _LoginScreenState extends State<LoginScreen> {
           email: email,
           password: password,
           emailRedirectTo: 'com.example.auvix://login-callback',
-          data: {'full_name': fullName},
+          data: {
+            'full_name': fullName,
+            'terms_version': _termsVersion,
+            'privacy_version': _privacyVersion,
+            'legal_accepted_at': DateTime.now().toUtc().toIso8601String(),
+          },
         );
 
         if (!mounted) return;
@@ -138,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _toggleMode() {
     setState(() {
       isCreatingAccount = !isCreatingAccount;
+      _acceptedLegalDocuments = false;
     });
   }
 
@@ -217,6 +235,55 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
+                  if (isCreatingAccount) ...[
+                    CheckboxListTile(
+                      value: _acceptedLegalDocuments,
+                      onChanged: isLoading
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _acceptedLegalDocuments = value ?? false;
+                              });
+                            },
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Li e aceito os Termos de Uso e a Política de Privacidade.',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LegalDocumentScreen(
+                                      title: 'Termos de Uso',
+                                    ),
+                                  ),
+                                ),
+                          child: const Text('Termos de Uso'),
+                        ),
+                        TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LegalDocumentScreen(
+                                      title: 'Política de Privacidade',
+                                    ),
+                                  ),
+                                ),
+                          child: const Text('Política de Privacidade'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   ElevatedButton(
                     onPressed: isLoading ? null : _submit,
                     child: isLoading

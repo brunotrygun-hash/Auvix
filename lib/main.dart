@@ -7,6 +7,7 @@ import 'theme/auvix_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/navigation_screen.dart';
+import 'screens/legal_gate_screen.dart';
 import 'screens/password_recovery_screen.dart';
 
 Future<void> main() async {
@@ -80,7 +81,7 @@ class _AuvixAppState extends State<AuvixApp> {
       home: _isPasswordRecovery
           ? PasswordRecoveryScreen(onCompleted: _finishPasswordRecovery)
           : session != null
-          ? const MainNavigationScreen()
+          ? const LegalGateScreen()
           : const OnboardingScreen(),
     );
   }

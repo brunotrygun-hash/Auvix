@@ -607,7 +607,7 @@ class MoreDetailScreen extends StatelessWidget {
     }
 
     if (title == 'Política de Privacidade' || title == 'Termos de Uso') {
-      return _LegalDocumentScreen(title: title);
+      return LegalDocumentScreen(title: title);
     }
 
     if (title == 'Sobre o AUVIX') {
@@ -1200,10 +1200,10 @@ class _AboutFeature extends StatelessWidget {
   }
 }
 
-class _LegalDocumentScreen extends StatelessWidget {
+class LegalDocumentScreen extends StatelessWidget {
   final String title;
 
-  const _LegalDocumentScreen({required this.title});
+  const LegalDocumentScreen({super.key, required this.title});
 
   static const _privacySections = <(String, String)>[
     (
