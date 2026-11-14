@@ -26,6 +26,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/avatars/
+    - assets/images/economy/
 
 flutter_launcher_icons:
   android: true

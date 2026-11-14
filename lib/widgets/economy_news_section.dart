@@ -185,6 +185,54 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
     );
   }
 
+  String? _localImageAsset(EconomyNews news) {
+    final text = '${news.title} ${news.summary}'.toLowerCase();
+
+    if (RegExp(r'infla|preç|supermerc|cesta|alimenta|custo de vida|ipca|alimento').hasMatch(text)) {
+      return 'assets/images/economy/05_inflacao_precos.png';
+    }
+
+    if (RegExp(r'invest|aplica|carteira|renda fixa|tesouro|cdb|fundos?').hasMatch(text)) {
+      return 'assets/images/economy/04_investimentos.png';
+    }
+
+    if (RegExp(r'crescimento|patrim[oô]nio|pib|lucro|expans|produ[cç][aã]o|emprego').hasMatch(text)) {
+      return 'assets/images/economy/03_crescimento_patrimonio.png';
+    }
+
+    if (RegExp(r'd[oó]lar|real|c[aâ]mbio|moeda|dinheiro|selic|juros|banco central|cr[eé]dito').hasMatch(text)) {
+      return 'assets/images/economy/02_dinheiro_brasil.png';
+    }
+
+    if (RegExp(r'ibovespa|bolsa|mercado financeiro|preg[aã]o|b3|aç[oõ]es?').hasMatch(text)) {
+      return 'assets/images/economy/01_mercado_financeiro.png';
+    }
+
+    return null;
+  }
+
+  Widget _localNewsImage(
+    EconomyNews news, {
+    int index = 0,
+    double height = 76,
+    double width = 82,
+  }) {
+    final asset = _localImageAsset(news);
+
+    if (asset == null) {
+      return _auvixIllustration(index, height: height, width: width);
+    }
+
+    return Image.asset(
+      asset,
+      height: height,
+      width: width,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          _auvixIllustration(index, height: height, width: width),
+    );
+  }
+
   Widget _featuredCard(EconomyNews news) {
     return Material(
       color: AuvixTheme.surface,
@@ -198,7 +246,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _newsImage(news.imageUrl, height: 175),
+              _localNewsImage(news, height: 175, width: double.infinity),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -269,7 +317,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: _auvixIllustration(index, height: 76, width: 82),
+                child: _localNewsImage(news, index: index, height: 76, width: 82),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -495,7 +543,10 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EconomyNewsDetailScreen(news: news),
+        builder: (_) => EconomyNewsDetailScreen(
+          news: news,
+          imageAsset: _localImageAsset(news),
+        ),
       ),
     );
   }
@@ -503,8 +554,13 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
 
 class EconomyNewsDetailScreen extends StatelessWidget {
   final EconomyNews news;
+  final String? imageAsset;
 
-  const EconomyNewsDetailScreen({super.key, required this.news});
+  const EconomyNewsDetailScreen({
+    super.key,
+    required this.news,
+    this.imageAsset,
+  });
 
   Future<void> _openOriginal(BuildContext context) async {
     final uri = Uri.tryParse(news.url);
@@ -542,16 +598,12 @@ class EconomyNewsDetailScreen extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: news.imageUrl != null &&
-                    news.imageUrl!.startsWith('https://')
-                ? Image.network(
-                    news.imageUrl!,
+            child: imageAsset != null
+                ? Image.asset(
+                    imageAsset!,
                     height: 210,
+                    width: double.infinity,
                     fit: BoxFit.cover,
-                    headers: const {
-                      "User-Agent":
-                          "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-                    },
                     errorBuilder: (_, __, ___) => _detailFallback(),
                   )
                 : _detailFallback(),
