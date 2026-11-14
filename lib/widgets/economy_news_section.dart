@@ -185,43 +185,24 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
     );
   }
 
-  String? _localImageAsset(EconomyNews news) {
-    final text = '${news.title} ${news.summary}'.toLowerCase();
+  String _localImageAsset(int index) {
+    const images = [
+      'assets/images/economy/01_mercado_financeiro.png',
+      'assets/images/economy/02_dinheiro_brasil.png',
+      'assets/images/economy/03_crescimento_patrimonio.png',
+      'assets/images/economy/04_investimentos.png',
+      'assets/images/economy/05_inflacao_precos.png',
+    ];
 
-    if (RegExp(r'infla|preç|supermerc|cesta|alimenta|custo de vida|ipca|alimento').hasMatch(text)) {
-      return 'assets/images/economy/05_inflacao_precos.png';
-    }
-
-    if (RegExp(r'invest|aplica|carteira|renda fixa|tesouro|cdb|fundos?').hasMatch(text)) {
-      return 'assets/images/economy/04_investimentos.png';
-    }
-
-    if (RegExp(r'crescimento|patrim[oô]nio|pib|lucro|expans|produ[cç][aã]o|emprego').hasMatch(text)) {
-      return 'assets/images/economy/03_crescimento_patrimonio.png';
-    }
-
-    if (RegExp(r'd[oó]lar|real|c[aâ]mbio|moeda|dinheiro|selic|juros|banco central|cr[eé]dito').hasMatch(text)) {
-      return 'assets/images/economy/02_dinheiro_brasil.png';
-    }
-
-    if (RegExp(r'ibovespa|bolsa|mercado financeiro|preg[aã]o|b3|aç[oõ]es?').hasMatch(text)) {
-      return 'assets/images/economy/01_mercado_financeiro.png';
-    }
-
-    return null;
+    return images[index % images.length];
   }
 
   Widget _localNewsImage(
-    EconomyNews news, {
-    int index = 0,
+    int index, {
     double height = 76,
     double width = 82,
   }) {
-    final asset = _localImageAsset(news);
-
-    if (asset == null) {
-      return _auvixIllustration(index, height: height, width: width);
-    }
+    final asset = _localImageAsset(index);
 
     return Image.asset(
       asset,
@@ -239,14 +220,14 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _openDetails(news),
+        onTap: () => _openDetails(news, 0),
         child: Container(
           decoration: _decoration(),
           clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _localNewsImage(news, height: 175, width: double.infinity),
+              _localNewsImage(0, height: 175, width: double.infinity),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -308,7 +289,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _openDetails(news),
+        onTap: () => _openDetails(news, index),
         child: Container(
           padding: const EdgeInsets.all(13),
           decoration: _decoration(),
@@ -317,7 +298,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: _localNewsImage(news, index: index, height: 76, width: 82),
+                child: _localNewsImage(index, height: 76, width: 82),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -539,13 +520,13 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
     return '$day/$month/${local.year}';
   }
 
-  void _openDetails(EconomyNews news) {
+  void _openDetails(EconomyNews news, int index) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => EconomyNewsDetailScreen(
           news: news,
-          imageAsset: _localImageAsset(news),
+          imageAsset: _localImageAsset(index),
         ),
       ),
     );
