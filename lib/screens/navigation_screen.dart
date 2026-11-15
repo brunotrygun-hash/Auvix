@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 import 'portfolio_screen.dart';
@@ -157,7 +157,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         throw Exception('Usuário não autenticado.');
       }
 
-      final preferences = await SharedPreferences.getInstance();
+      final preferences = await UserPreferences.getInstance();
       final savedIds = preferences.getStringList(_storageKey) ?? [];
 
       final rows = await client
@@ -654,7 +654,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final enabled = prefs.getBool(_notificationKey) ?? true;
 
     if (!mounted) return;
@@ -668,7 +668,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveNotificationPreference(bool value) async {
     setState(() => _officialNotificationsEnabled = value);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     await prefs.setBool(_notificationKey, value);
   }
 

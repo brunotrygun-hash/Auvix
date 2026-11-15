@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -26,7 +26,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
 
     final historyString = prefs.getString('auvix_money_history');
 
@@ -50,7 +50,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 
   Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
 
     await prefs.setDouble(
       'auvix_money_total',

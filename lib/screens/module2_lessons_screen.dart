@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -218,7 +218,7 @@ class _Module2LessonsScreenState extends State<Module2LessonsScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final loaded = <int>{};
 
     for (var i = 1; i <= lessons.length; i++) {
@@ -459,7 +459,7 @@ class _Module2LessonDetailScreenState
   }
 
   Future<void> _loadCompletion() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final key =
         'module_02_lesson_${widget.lessonNumber.toString().padLeft(2, '0')}_completed';
     final value = prefs.getBool(key) ?? false;
@@ -482,7 +482,7 @@ class _Module2LessonDetailScreenState
     });
 
     if (isCorrect) {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await UserPreferences.getInstance();
       final key =
           'module_02_lesson_${widget.lessonNumber.toString().padLeft(2, '0')}_completed';
       await prefs.setBool(key, true);

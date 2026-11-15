@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -65,7 +65,7 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
   }
 
   Future<void> _loadSavedData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
 
     if (!mounted) return;
 
@@ -104,7 +104,7 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
   Future<void> _saveData() async {
     if (_isLoadingSavedData) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
 
     await prefs.setString(
       'wealth_contribution_input',

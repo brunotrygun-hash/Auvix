@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -495,7 +495,7 @@ class _InteractiveLessonScreenState
                               if (selectedAnswer == correctAnswer) {
                                 try {
                                   final prefs =
-                                      await SharedPreferences.getInstance();
+                                      await UserPreferences.getInstance();
 
                                   await prefs.setBool(
                                     'lesson_${widget.lessonNumber}_completed',

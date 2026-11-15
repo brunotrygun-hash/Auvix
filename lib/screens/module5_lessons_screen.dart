@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 
@@ -183,7 +183,7 @@ class _Module5LessonsScreenState extends State<Module5LessonsScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final completed = <int>{};
 
     for (int i = 0; i < lessons.length; i++) {
@@ -201,7 +201,7 @@ class _Module5LessonsScreenState extends State<Module5LessonsScreen> {
   }
 
   Future<void> _completeLesson(int index) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final number = (index + 1).toString().padLeft(2, '0');
 
     await prefs.setBool('module_05_lesson_${number}_completed', true);

@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import 'profile_screen.dart';
 
@@ -65,7 +65,7 @@ class PortfolioScreenState extends State<PortfolioScreen> {
 
   Future<void> refreshProfileData() async {
     final user = Supabase.instance.client.auth.currentUser;
-    final preferences = await SharedPreferences.getInstance();
+    final preferences = await UserPreferences.getInstance();
 
     final savedName = user?.userMetadata?['full_name'];
     final userId = user?.id ?? 'unknown';
@@ -109,7 +109,7 @@ class PortfolioScreenState extends State<PortfolioScreen> {
   }
 
   Future<void> _loadPersonalAssetsTotal() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await UserPreferences.getInstance();
     final saved = prefs.getString('auvix_personal_assets');
     double sum = 0;
 

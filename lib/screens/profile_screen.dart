@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/auvix_theme.dart';
@@ -106,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadAvatar() async {
-    final preferences = await SharedPreferences.getInstance();
+    final preferences = await UserPreferences.getInstance();
     final savedAvatar = preferences.getInt(_storageKey) ?? 0;
 
     if (!mounted) return;
@@ -120,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveAvatar(int index) async {
-    final preferences = await SharedPreferences.getInstance();
+    final preferences = await UserPreferences.getInstance();
     await preferences.setInt(_storageKey, index);
 
     if (!mounted) return;

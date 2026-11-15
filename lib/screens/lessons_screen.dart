@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
 import 'lesson_content.dart';
@@ -64,7 +64,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
 
   Future<void> _loadProgress() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await UserPreferences.getInstance();
       final completed = <int>{};
 
       for (int lesson = 1; lesson <= fundamentalsLessons.length; lesson++) {
