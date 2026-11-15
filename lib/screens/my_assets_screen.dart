@@ -1,6 +1,9 @@
+import '../services/brazilian_number_parser.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+
 import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
@@ -55,16 +58,9 @@ class _MyAssetsScreenState extends State<MyAssetsScreen> {
   }
 
   double? _parseValue(String text) {
-    var value = text.trim().replaceAll(' ', '');
+    final parsed = BrazilianNumberParser.parse(text);
 
-    if (value.contains(',')) {
-      value = value.replaceAll('.', '').replaceAll(',', '.');
-    }
-
-    final parsed = double.tryParse(value);
-    if (parsed == null || !parsed.isFinite || parsed <= 0) {
-      return null;
-    }
+    if (parsed == null || parsed <= 0) return null;
 
     return parsed;
   }

@@ -1,6 +1,9 @@
+import '../services/brazilian_number_parser.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+
 import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
@@ -40,9 +43,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
         if (decoded is List) {
           _history = decoded
-              .map(
-                (item) => Map<String, dynamic>.from(item),
-              )
+              .map((item) => Map<String, dynamic>.from(item))
               .toList();
         }
       }
@@ -52,25 +53,13 @@ class _MoneyScreenState extends State<MoneyScreen> {
   Future<void> _saveData() async {
     final prefs = await UserPreferences.getInstance();
 
-    await prefs.setDouble(
-      'auvix_money_total',
-      _total,
-    );
+    await prefs.setDouble('auvix_money_total', _total);
 
-    await prefs.setDouble(
-      'auvix_money_monthly_goal',
-      _monthlyGoal,
-    );
+    await prefs.setDouble('auvix_money_monthly_goal', _monthlyGoal);
 
-    await prefs.setDouble(
-      'auvix_money_goal',
-      _goal,
-    );
+    await prefs.setDouble('auvix_money_goal', _goal);
 
-    await prefs.setString(
-      'auvix_money_history',
-      jsonEncode(_history),
-    );
+    await prefs.setString('auvix_money_history', jsonEncode(_history));
   }
 
   Future<void> _registerMoney() async {
@@ -115,30 +104,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ),
             FilledButton(
               onPressed: () {
-                final value = double.tryParse(
-                  valueController.text
-                      .replaceAll('.', '')
-                      .replaceAll(',', '.'),
-                );
+                final value = BrazilianNumberParser.parse(valueController.text);
 
                 if (value == null || value <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Digite um valor válido.'),
-                    ),
+                    const SnackBar(content: Text('Digite um valor válido.')),
                   );
                   return;
                 }
 
-                final description =
-                    descriptionController.text.trim().isEmpty
-                        ? 'Dinheiro reservado'
-                        : descriptionController.text.trim();
+                final description = descriptionController.text.trim().isEmpty
+                    ? 'Dinheiro reservado'
+                    : descriptionController.text.trim();
 
-                Navigator.of(dialogContext).pop({
-                  'value': value,
-                  'description': description,
-                });
+                Navigator.of(dialogContext)
+                    .pop({'value': value, 'description': description});
               },
               child: const Text('Salvar'),
             ),
@@ -162,17 +142,14 @@ class _MoneyScreenState extends State<MoneyScreen> {
     setState(() {
       _total += value;
 
-      _history.insert(
-        0,
-        {
-          'value': value,
-          'description': description,
-          'date':
-              '${now.day.toString().padLeft(2, '0')}/'
-              '${now.month.toString().padLeft(2, '0')}/'
-              '${now.year}',
-        },
-      );
+      _history.insert(0, {
+        'value': value,
+        'description': description,
+        'date':
+            '${now.day.toString().padLeft(2, '0')}/'
+            '${now.month.toString().padLeft(2, '0')}/'
+            '${now.year}',
+      });
     });
 
     await _saveData();
@@ -182,9 +159,145 @@ class _MoneyScreenState extends State<MoneyScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Dinheiro registrado com sucesso!'),
+      const SnackBar(content: Text('Dinheiro registrado com sucesso!')),
+    );
+  }
+
+  Future<void> _editMoney(int index) async {
+    if (index < 0 || index >= _history.length) return;
+
+    final item = _history[index];
+    final valueController = TextEditingController(
+      text: ((item['value'] as num?)?.toDouble() ?? 0)
+          .toStringAsFixed(2)
+          .replaceAll('.', ','),
+    );
+    final descriptionController = TextEditingController(
+      text: item['description']?.toString() ?? 'Dinheiro reservado',
+    );
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Editar lançamento'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: valueController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Valor',
+                prefixText: 'R\$ ',
+                hintText: '100,00',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: 'Descrição'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = BrazilianNumberParser.parse(valueController.text);
+
+              if (value == null || value <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Digite um valor válido.')),
+                );
+                return;
+              }
+
+              final description = descriptionController.text.trim().isEmpty
+                  ? 'Dinheiro reservado'
+                  : descriptionController.text.trim();
+
+              Navigator.of(dialogContext)
+                  .pop({'value': value, 'description': description});
+            },
+            child: const Text('Salvar alterações'),
+          ),
+        ],
       ),
+    );
+
+    valueController.dispose();
+    descriptionController.dispose();
+
+    if (result == null || !mounted) return;
+
+    final oldValue = (item['value'] as num?)?.toDouble() ?? 0;
+    final newValue = result['value'] as double;
+
+    setState(() {
+      _history[index] = {
+        ...item,
+        'value': newValue,
+        'description': result['description'],
+      };
+
+      _total = (_total - oldValue + newValue)
+          .clamp(0.0, double.infinity)
+          .toDouble();
+    });
+
+    await _saveData();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lançamento atualizado com sucesso!')),
+    );
+  }
+
+  Future<void> _deleteMoney(int index) async {
+    if (index < 0 || index >= _history.length) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir lançamento?'),
+        content: const Text(
+          'Este valor será removido do histórico e descontado da reserva.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final oldValue = (_history[index]['value'] as num?)?.toDouble() ?? 0;
+
+    setState(() {
+      _history.removeAt(index);
+      _total = (_total - oldValue).clamp(0.0, double.infinity).toDouble();
+    });
+
+    await _saveData();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lançamento excluído com sucesso!')),
     );
   }
 
@@ -198,9 +311,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           title: const Text('Definir meta'),
           content: TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Valor da meta',
               prefixText: 'R\$ ',
@@ -216,11 +327,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ),
             FilledButton(
               onPressed: () {
-                final value = double.tryParse(
-                  controller.text
-                      .replaceAll('.', '')
-                      .replaceAll(',', '.'),
-                );
+                final value = BrazilianNumberParser.parse(controller.text);
 
                 if (value == null || value <= 0) {
                   return;
@@ -258,9 +365,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
           title: const Text('Meta mensal'),
           content: TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Quanto pretende guardar por mês?',
               prefixText: 'R\$ ',
@@ -276,11 +381,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
             ),
             FilledButton(
               onPressed: () {
-                final value = double.tryParse(
-                  controller.text
-                      .replaceAll('.', '')
-                      .replaceAll(',', '.'),
-                );
+                final value = BrazilianNumberParser.parse(controller.text);
 
                 if (value == null || value <= 0) {
                   return;
@@ -338,10 +439,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
             const Text(
               'Organização financeira',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -375,10 +473,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
 
             const Text(
               'Histórico',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -409,19 +504,23 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 ),
               )
             else
-              ..._history.map(
-                (item) => Padding(
+              ..._history.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+
+                return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _HistoryCard(
                     description:
-                        item['description']?.toString() ??
-                            'Dinheiro reservado',
+                        item['description']?.toString() ?? 'Dinheiro reservado',
                     date: item['date']?.toString() ?? '',
                     value: (item['value'] as num?)?.toDouble() ?? 0,
                     money: _money,
+                    onEdit: () => _editMoney(index),
+                    onDelete: () => _deleteMoney(index),
                   ),
-                ),
-              ),
+                );
+              }),
 
             const SizedBox(height: 20),
 
@@ -429,10 +528,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: AuvixTheme.accent,
-                  ),
+                  Icon(Icons.info_outline, color: AuvixTheme.accent),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -477,26 +573,19 @@ class _MoneySummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: AuvixTheme.accent.withValues(alpha: 0.15),
-        border: Border.all(
-          color: AuvixTheme.accent.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AuvixTheme.accent.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Dinheiro reservado',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-            ),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
           ),
           const SizedBox(height: 8),
           Text(
             money(total),
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           Row(
@@ -510,9 +599,7 @@ class _MoneySummaryCard extends StatelessWidget {
               Expanded(
                 child: _SmallValue(
                   label: 'Mensal',
-                  value: monthlyGoal > 0
-                      ? money(monthlyGoal)
-                      : 'Não definida',
+                  value: monthlyGoal > 0 ? money(monthlyGoal) : 'Não definida',
                 ),
               ),
             ],
@@ -539,10 +626,7 @@ class _SmallValue extends StatelessWidget {
   final String label;
   final String value;
 
-  const _SmallValue({
-    required this.label,
-    required this.value,
-  });
+  const _SmallValue({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -557,12 +641,7 @@ class _SmallValue extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -597,10 +676,7 @@ class _ActionCard extends StatelessWidget {
                   color: AuvixTheme.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  icon,
-                  color: AuvixTheme.accent,
-                ),
+                child: Icon(icon, color: AuvixTheme.accent),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -609,9 +685,7 @@ class _ActionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -637,19 +711,23 @@ class _HistoryCard extends StatelessWidget {
   final String date;
   final double value;
   final String Function(double) money;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _HistoryCard({
     required this.description,
     required this.date,
     required this.value,
     required this.money,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
             Container(
@@ -663,16 +741,14 @@ class _HistoryCard extends StatelessWidget {
                 color: Colors.greenAccent,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -682,15 +758,34 @@ class _HistoryCard extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '+ ${money(value)}',
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Text(
-              '+ ${money(value)}',
-              style: const TextStyle(
-                color: Colors.greenAccent,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Editar lançamento',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Excluir lançamento',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onDelete,
+                  color: Colors.redAccent,
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
             ),
           ],
         ),
@@ -702,9 +797,7 @@ class _HistoryCard extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final Widget child;
 
-  const _SectionCard({
-    required this.child,
-  });
+  const _SectionCard({required this.child});
 
   @override
   Widget build(BuildContext context) {

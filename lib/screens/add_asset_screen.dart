@@ -1,4 +1,7 @@
+import '../services/brazilian_number_parser.dart';
+
 import 'package:flutter/material.dart';
+
 import '../models/asset_position.dart';
 import '../theme/auvix_theme.dart';
 
@@ -24,15 +27,15 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
 
   void save() {
     final ticker = tickerController.text.trim().toUpperCase();
-    final quantity = double.tryParse(
-      quantityController.text.trim().replaceAll(',', '.'),
-    ) ?? 0;
-    final average = double.tryParse(
-      averageController.text.trim().replaceAll(',', '.'),
-    ) ?? 0;
+    final quantity =
+        BrazilianNumberParser.parse(
+          quantityController.text,
+          dotIsDecimal: true,
+        ) ??
+        0;
+    final average = BrazilianNumberParser.parse(averageController.text) ?? 0;
 
-    if (ticker.isEmpty ||
-        !RegExp(r'^[A-Z0-9]{5,6}$').hasMatch(ticker)) {
+    if (ticker.isEmpty || !RegExp(r'^[A-Z0-9]{5,6}$').hasMatch(ticker)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Informe um código de ativo válido.')),
       );
@@ -90,22 +93,14 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
           const SizedBox(height: 14),
           TextField(
             controller: quantityController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Quantidade de ações',
-            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Quantidade de ações'),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: averageController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Preço médio (R\$)',
-            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Preço médio (R\$)'),
           ),
           const SizedBox(height: 20),
           Container(

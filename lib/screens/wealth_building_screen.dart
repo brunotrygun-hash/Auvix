@@ -1,6 +1,9 @@
+import '../services/brazilian_number_parser.dart';
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+
 import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
@@ -155,21 +158,13 @@ class _WealthBuildingScreenState extends State<WealthBuildingScreen> {
     super.dispose();
   }
 
-  double? _readNumber(String value) {
-    final normalized = value.trim().replaceAll(' ', '');
-
-    if (normalized.isEmpty) return null;
-
-    final parsed = normalized.contains(',')
-        ? normalized.replaceAll('.', '').replaceAll(',', '.')
-        : normalized;
-
-    return double.tryParse(parsed);
+  double? _readNumber(String value, {bool dotIsDecimal = false}) {
+    return BrazilianNumberParser.parse(value, dotIsDecimal: dotIsDecimal);
   }
 
   Future<void> _simulate() async {
     final contribution = _readNumber(_contributionController.text);
-    final rate = _readNumber(_rateController.text);
+    final rate = _readNumber(_rateController.text, dotIsDecimal: true);
     final months = int.tryParse(_monthsController.text.trim());
     final goal = _readNumber(_goalController.text);
 

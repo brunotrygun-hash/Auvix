@@ -1,15 +1,15 @@
+import '../services/brazilian_number_parser.dart';
+
 import 'package:flutter/material.dart';
 
 class CompoundInterestScreen extends StatefulWidget {
   const CompoundInterestScreen({super.key});
 
   @override
-  State<CompoundInterestScreen> createState() =>
-      _CompoundInterestScreenState();
+  State<CompoundInterestScreen> createState() => _CompoundInterestScreenState();
 }
 
-class _CompoundInterestScreenState
-    extends State<CompoundInterestScreen> {
+class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
   final capitalController = TextEditingController();
   final monthlyController = TextEditingController();
   final rateController = TextEditingController();
@@ -22,33 +22,19 @@ class _CompoundInterestScreenState
   bool calculated = false;
 
   void calculate() {
-    final capital = double.tryParse(
-          capitalController.text.replaceAll(',', '.'),
-        ) ??
-        0;
+    final capital = BrazilianNumberParser.parse(capitalController.text) ?? 0;
 
-    final monthly = double.tryParse(
-          monthlyController.text.replaceAll(',', '.'),
-        ) ??
-        0;
+    final monthly = BrazilianNumberParser.parse(monthlyController.text) ?? 0;
 
-    final rate = double.tryParse(
-          rateController.text.replaceAll(',', '.'),
-        ) ??
+    final rate =
+        BrazilianNumberParser.parse(rateController.text, dotIsDecimal: true) ??
         0;
 
     final months = int.tryParse(monthsController.text) ?? 0;
 
-    if (capital < 0 ||
-        monthly < 0 ||
-        rate < 0 ||
-        months <= 0) {
+    if (capital < 0 || monthly < 0 || rate < 0 || months <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Preencha os valores corretamente.',
-          ),
-        ),
+        const SnackBar(content: Text('Preencha os valores corretamente.')),
       );
       return;
     }
@@ -88,9 +74,7 @@ class _CompoundInterestScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calculadora'),
-      ),
+      appBar: AppBar(title: const Text('Calculadora')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -98,20 +82,14 @@ class _CompoundInterestScreenState
           children: [
             const Text(
               '🧮 Juros Compostos',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
 
             Text(
               'Simule o crescimento do seu dinheiro ao longo do tempo.',
-              style: TextStyle(
-                color: Colors.grey.shade400,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
             ),
 
             const SizedBox(height: 28),
@@ -161,10 +139,7 @@ class _CompoundInterestScreenState
                 icon: const Icon(Icons.calculate),
                 label: const Text(
                   'CALCULAR',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -174,10 +149,7 @@ class _CompoundInterestScreenState
 
               const Text(
                 'Resultado da simulação',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 16),
@@ -212,9 +184,7 @@ class _CompoundInterestScreenState
                 ),
                 child: const Text(
                   '⚠️ Esta é uma simulação. A rentabilidade real dos investimentos pode variar e não é garantida.',
-                  style: TextStyle(
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(fontSize: 13),
                 ),
               ),
             ],
@@ -248,17 +218,13 @@ class _InputField extends StatelessWidget {
       controller: controller,
       keyboardType: integer
           ? TextInputType.number
-          : const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
+          : const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixText: prefix,
         suffixText: suffix,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -282,10 +248,7 @@ class _ResultCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        leading: Icon(
-          icon,
-          size: 30,
-        ),
+        leading: Icon(icon, size: 30),
         title: Text(title),
         trailing: Text(
           value,
