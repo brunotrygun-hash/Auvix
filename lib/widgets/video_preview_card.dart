@@ -70,7 +70,12 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              YoutubePlayer(controller: _controller, aspectRatio: 16 / 9),
+              IgnorePointer(
+                child: YoutubePlayer(
+                  controller: _controller,
+                  aspectRatio: 16 / 9,
+                ),
+              ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

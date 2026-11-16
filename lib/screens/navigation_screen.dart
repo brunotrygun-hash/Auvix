@@ -71,44 +71,52 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AuvixTheme.background,
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: _selectedIndex == 4
-          ? null
-          : NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Início',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.account_balance_wallet_outlined),
-                  selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-                  label: 'Reserva',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.notifications_none_rounded),
-                  selectedIcon: Icon(Icons.notifications_rounded),
-                  label: 'Alertas',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.menu_rounded),
-                  selectedIcon: Icon(Icons.menu_open_rounded),
-                  label: 'Mais',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.play_circle_outline_rounded),
-                  selectedIcon: Icon(Icons.play_circle_fill_rounded),
-                  label: 'Vídeos',
-                ),
-              ],
-            ),
+    return PopScope<Object?>(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AuvixTheme.background,
+        body: IndexedStack(index: _selectedIndex, children: _pages),
+        bottomNavigationBar: _selectedIndex == 4
+            ? null
+            : NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) {
+                  setState(() => _selectedIndex = index);
+                },
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home_rounded),
+                    label: 'Início',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                    label: 'Reserva',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.notifications_none_rounded),
+                    selectedIcon: Icon(Icons.notifications_rounded),
+                    label: 'Alertas',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.menu_rounded),
+                    selectedIcon: Icon(Icons.menu_open_rounded),
+                    label: 'Mais',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.play_circle_outline_rounded),
+                    selectedIcon: Icon(Icons.play_circle_fill_rounded),
+                    label: 'Vídeos',
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }
