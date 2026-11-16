@@ -14,6 +14,7 @@ import '../theme/auvix_theme.dart';
 import '../widgets/market_ticker.dart';
 import '../widgets/home_sections.dart';
 import '../widgets/economy_news_section.dart';
+import '../widgets/video_preview_card.dart';
 
 import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
@@ -25,10 +26,14 @@ class PortfolioScreen extends StatefulWidget {
     super.key,
     this.onOpenAlerts,
     required this.unreadCount,
+    this.onOpenVideos,
+    this.isActive = true,
   });
 
   final VoidCallback? onOpenAlerts;
   final ValueListenable<int> unreadCount;
+  final VoidCallback? onOpenVideos;
+  final bool isActive;
 
   @override
   State<PortfolioScreen> createState() => PortfolioScreenState();
@@ -245,6 +250,11 @@ class PortfolioScreenState extends State<PortfolioScreen> {
           ),
 
           const MarketTicker(),
+          const SizedBox(height: 14),
+          VideoPreviewCard(
+            isActive: widget.isActive,
+            onTap: () => widget.onOpenVideos?.call(),
+          ),
           const SizedBox(height: 18),
 
           _PortfolioCard(

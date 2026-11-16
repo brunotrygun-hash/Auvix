@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../services/user_preferences.dart';
 
 import '../theme/auvix_theme.dart';
@@ -8,6 +9,7 @@ import 'money_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'admin_announcements_screen.dart';
+import 'videos_feed_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -23,10 +25,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<PortfolioScreenState> _homeKey =
       GlobalKey<PortfolioScreenState>();
 
-  late final List<Widget> _pages = [
+  List<Widget> get _pages => [
     PortfolioScreen(
       key: _homeKey,
       unreadCount: _unreadCount,
+      isActive: _selectedIndex == 0,
+      onOpenVideos: () {
+        setState(() => _selectedIndex = 4);
+      },
       onOpenAlerts: () {
         setState(() => _selectedIndex = 2);
       },
@@ -38,6 +44,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       },
     ),
     MoreScreen(onOpenPage: _openPage),
+    VideosFeedScreen(
+      isActive: _selectedIndex == 4,
+      onExit: () {
+        setState(() => _selectedIndex = 0);
+      },
+    ),
   ];
 
   @override
@@ -62,34 +74,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Scaffold(
       backgroundColor: AuvixTheme.background,
       body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Início',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'Reserva',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_none_rounded),
-            selectedIcon: Icon(Icons.notifications_rounded),
-            label: 'Alertas',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_rounded),
-            selectedIcon: Icon(Icons.menu_open_rounded),
-            label: 'Mais',
-          ),
-        ],
-      ),
+      bottomNavigationBar: _selectedIndex == 4
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: 'Início',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.account_balance_wallet_outlined),
+                  selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                  label: 'Reserva',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.notifications_none_rounded),
+                  selectedIcon: Icon(Icons.notifications_rounded),
+                  label: 'Alertas',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.menu_rounded),
+                  selectedIcon: Icon(Icons.menu_open_rounded),
+                  label: 'Mais',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.play_circle_outline_rounded),
+                  selectedIcon: Icon(Icons.play_circle_fill_rounded),
+                  label: 'Vídeos',
+                ),
+              ],
+            ),
     );
   }
 }
