@@ -70,11 +70,16 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              IgnorePointer(
-                child: YoutubePlayer(
-                  controller: _controller,
-                  aspectRatio: 16 / 9,
-                ),
+              YoutubePlayer(
+                controller: _controller,
+                aspectRatio: 16 / 9,
+                controlsBuilder: (playerContext, isFullscreen) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: widget.onTap,
+                    child: const SizedBox.expand(),
+                  );
+                },
               ),
               DecoratedBox(
                 decoration: BoxDecoration(

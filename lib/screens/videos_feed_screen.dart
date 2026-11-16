@@ -227,35 +227,22 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF06121A),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // Player vertical; os controles visuais são do AUVIX.
-              Center(
-                child: SizedBox(
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                  child: IgnorePointer(
-                    child: YoutubePlayer(
-                      controller: _controller,
-                      aspectRatio: 9 / 16,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Camada de leitura sobre o vídeo.
-              Positioned.fill(
-                child: IgnorePointer(
+      body: SizedBox.expand(
+        child: YoutubePlayer(
+          controller: _controller,
+          aspectRatio: 9 / 16,
+          controlsBuilder: (playerContext, isFullscreen) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                IgnorePointer(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.45),
+                          Colors.black.withValues(alpha: 0.48),
                           Colors.transparent,
                           Colors.transparent,
                           const Color(0xE606121A),
@@ -265,183 +252,181 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                     ),
                   ),
                 ),
-              ),
 
-              // Cabeçalho AUVIX e botão de retorno.
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 8,
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          _roundButton(
+                            icon: Icons.arrow_back_rounded,
+                            onTap: widget.onExit,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'AUVIX',
+                            style: TextStyle(
+                              color: AuvixTheme.accent,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 3,
+                              shadows: [
+                                Shadow(
+                                  color: AuvixTheme.accent,
+                                  blurRadius: 12,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          const Text(
+                            'VÍDEOS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        _roundButton(
-                          icon: Icons.arrow_back_rounded,
-                          onTap: widget.onExit,
+                  ),
+                ),
+
+                Positioned(
+                  right: 13,
+                  bottom: 155,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _action(
+                        icon: _liked
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        label: 'Curtir',
+                        active: _liked,
+                        onTap: () => setState(() => _liked = !_liked),
+                      ),
+                      _action(
+                        icon: Icons.mode_comment_outlined,
+                        label: 'Comentar',
+                        onTap: _showComments,
+                      ),
+                      _action(
+                        icon: _saved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        label: 'Salvar',
+                        active: _saved,
+                        onTap: () {
+                          setState(() => _saved = !_saved);
+                          _showMessage(
+                            _saved
+                                ? 'Vídeo salvo nesta sessão.'
+                                : 'Vídeo removido dos salvos nesta sessão.',
+                          );
+                        },
+                      ),
+                      _action(
+                        icon: Icons.share_outlined,
+                        label: 'Enviar',
+                        onTap: _shareVideo,
+                      ),
+                    ],
+                  ),
+                ),
+
+                Positioned(
+                  left: 20,
+                  right: 88,
+                  bottom: 35,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'AUVIX',
+                        decoration: BoxDecoration(
+                          color: AuvixTheme.accent.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AuvixTheme.accent.withValues(alpha: 0.75),
+                          ),
+                        ),
+                        child: const Text(
+                          'EDUCAÇÃO FINANCEIRA',
                           style: TextStyle(
                             color: AuvixTheme.accent,
-                            fontSize: 21,
+                            fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 3,
-                            shadows: [
-                              Shadow(color: AuvixTheme.accent, blurRadius: 12),
-                            ],
+                            letterSpacing: 1.2,
                           ),
                         ),
-                        const Spacer(),
-                        const Text(
-                          'VÍDEOS',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Ações laterais.
-              Positioned(
-                right: 13,
-                bottom: 155,
-                child: Column(
-                  children: [
-                    _action(
-                      icon: _liked
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      label: 'Curtir',
-                      active: _liked,
-                      onTap: () {
-                        setState(() => _liked = !_liked);
-                      },
-                    ),
-                    _action(
-                      icon: Icons.mode_comment_outlined,
-                      label: 'Comentar',
-                      onTap: _showComments,
-                    ),
-                    _action(
-                      icon: _saved
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      label: 'Salvar',
-                      active: _saved,
-                      onTap: () {
-                        setState(() => _saved = !_saved);
-                        _showMessage(
-                          _saved
-                              ? 'Vídeo salvo nesta sessão.'
-                              : 'Vídeo removido dos salvos nesta sessão.',
-                        );
-                      },
-                    ),
-                    _action(
-                      icon: Icons.share_outlined,
-                      label: 'Enviar',
-                      onTap: _shareVideo,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Informações do vídeo.
-              Positioned(
-                left: 20,
-                right: 88,
-                bottom: 35,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
                       ),
-                      decoration: BoxDecoration(
-                        color: AuvixTheme.accent.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AuvixTheme.accent.withValues(alpha: 0.75),
-                        ),
-                      ),
-                      child: const Text(
-                        'EDUCAÇÃO FINANCEIRA',
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Seu dinheiro parado perde valor?',
                         style: TextStyle(
-                          color: AuvixTheme.accent,
-                          fontSize: 9,
+                          color: Colors.white,
+                          fontSize: 19,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Seu dinheiro parado perde valor?',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    const Text(
-                      'Aprenda a investir e faça seu dinheiro trabalhar por você.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        height: 1.35,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                      ),
-                    ),
-                    const SizedBox(height: 17),
-                    OutlinedButton.icon(
-                      onPressed: _togglePlayback,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AuvixTheme.accent,
-                        side: const BorderSide(
-                          color: AuvixTheme.accent,
-                          width: 1.3,
+                      const SizedBox(height: 7),
+                      const Text(
+                        'Aprenda a investir e faça seu dinheiro trabalhar por você.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          height: 1.35,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
                         ),
-                        backgroundColor: const Color(0xCC06121A),
                       ),
-                      icon: Icon(
-                        _playing
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
+                      const SizedBox(height: 17),
+                      OutlinedButton.icon(
+                        onPressed: _togglePlayback,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AuvixTheme.accent,
+                          side: const BorderSide(
+                            color: AuvixTheme.accent,
+                            width: 1.3,
+                          ),
+                          backgroundColor: const Color(0xCC06121A),
+                        ),
+                        icon: Icon(
+                          _playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                        label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
                       ),
-                      label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Botão central para retomar quando pausado.
-              if (!_playing)
-                Center(
-                  child: _roundButton(
-                    icon: Icons.play_arrow_rounded,
-                    size: 68,
-                    onTap: _togglePlayback,
+                    ],
                   ),
                 ),
-            ],
-          );
-        },
+
+                if (!_playing)
+                  Center(
+                    child: _roundButton(
+                      icon: Icons.play_arrow_rounded,
+                      size: 68,
+                      onTap: _togglePlayback,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
