@@ -41,7 +41,6 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
         showFullscreenButton: false,
         mute: false,
         loop: true,
-        playlist: '5P0VoKseJjY',
         playsInline: true,
         privacyEnhancedMode: true,
         pointerEvents: PointerEvents.none,

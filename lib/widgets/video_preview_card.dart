@@ -31,7 +31,6 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
         showFullscreenButton: false,
         mute: true,
         loop: true,
-        playlist: '5P0VoKseJjY',
         playsInline: true,
         privacyEnhancedMode: true,
         pointerEvents: PointerEvents.none,
