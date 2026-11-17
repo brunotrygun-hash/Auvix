@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../widgets/video_comments_sheet.dart';
@@ -209,9 +210,165 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     }
   }
 
-  void _shareVideo() {
-    Clipboard.setData(const ClipboardData(text: _videoUrl));
-    _showMessage('Link do vídeo copiado para compartilhar.');
+  Future<void> _shareVideo() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0B1C27),
+      isScrollControlled: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Compartilhar vídeo',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Escolha onde deseja compartilhar',
+                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _shareOption(
+                        label: 'WhatsApp',
+                        color: const Color(0xFF25D366),
+                        icon: Icons.chat_rounded,
+                        onTap: () async {
+                          Navigator.pop(sheetContext);
+                          final text = Uri.encodeComponent(
+                            'Confira este vídeo do AUVIX: $_videoUrl',
+                          );
+                          await _openShareDestination(
+                            'https://wa.me/?text=$text',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _shareOption(
+                        label: 'Facebook',
+                        color: const Color(0xFF1877F2),
+                        icon: Icons.facebook_rounded,
+                        onTap: () async {
+                          Navigator.pop(sheetContext);
+                          final link = Uri.encodeComponent(_videoUrl);
+                          await _openShareDestination(
+                            'https://www.facebook.com/sharer/sharer.php?u=$link',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _shareOption(
+                        label: 'Copiar link',
+                        color: AuvixTheme.accent,
+                        icon: Icons.copy_rounded,
+                        onTap: () async {
+                          await Clipboard.setData(
+                            const ClipboardData(text: _videoUrl),
+                          );
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext);
+                          }
+                          if (mounted) {
+                            _showMessage('Link do vídeo copiado!');
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _shareOption({
+    required String label,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF102A38),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.65)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 34),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openShareDestination(String destination) async {
+    try {
+      final uri = Uri.parse(destination);
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        _showMessage('Não foi possível abrir o compartilhamento.');
+      }
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Não foi possível abrir o compartilhamento.');
+      }
+    }
   }
 
   Widget _action({
