@@ -24,13 +24,14 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
   void initState() {
     super.initState();
     _controller = YoutubePlayerController.fromVideoId(
-      videoId: 'lZNX0fUOKcU',
+      videoId: '5P0VoKseJjY',
       autoPlay: widget.isActive,
       params: const YoutubePlayerParams(
         showControls: false,
         showFullscreenButton: false,
         mute: true,
         loop: true,
+        playlist: '5P0VoKseJjY',
         playsInline: true,
         privacyEnhancedMode: true,
         pointerEvents: PointerEvents.none,

@@ -25,7 +25,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   bool _saved = false;
   bool _playing = false;
 
-  static const String _videoUrl = 'https://youtube.com/shorts/lZNX0fUOKcU';
+  static const String _videoUrl = 'https://youtube.com/shorts/5P0VoKseJjY';
 
   @override
   void initState() {
@@ -34,12 +34,14 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     _playing = widget.isActive;
 
     _controller = YoutubePlayerController.fromVideoId(
-      videoId: 'lZNX0fUOKcU',
+      videoId: '5P0VoKseJjY',
       autoPlay: widget.isActive,
       params: const YoutubePlayerParams(
         showControls: false,
         showFullscreenButton: false,
         mute: false,
+        loop: true,
+        playlist: '5P0VoKseJjY',
         playsInline: true,
         privacyEnhancedMode: true,
         pointerEvents: PointerEvents.none,
