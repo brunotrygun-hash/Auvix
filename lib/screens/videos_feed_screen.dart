@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import '../widgets/video_comments_sheet.dart';
+import '../services/video_interactions_service.dart';
 import '../theme/auvix_theme.dart';
 
 class VideosFeedScreen extends StatefulWidget {
@@ -27,6 +29,9 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
 
   bool _liked = false;
   bool _saved = false;
+  bool _loadingInteractions = true;
+  bool _likeBusy = false;
+  bool _saveBusy = false;
   bool _playing = false;
 
   static const String _videoUrl = 'https://youtube.com/shorts/5P0VoKseJjY';
@@ -36,6 +41,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     super.initState();
 
     _playing = widget.isActive;
+    _loadInteractionStatus();
 
     _controller = YoutubePlayerController.fromVideoId(
       videoId: '5P0VoKseJjY',
@@ -120,8 +126,6 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   }
 
   void _showComments() {
-    final input = TextEditingController();
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -129,64 +133,80 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            22,
-            20,
-            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Comentários',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: input,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Escreva seu comentário...',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: const Color(0xFF102A38),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AuvixTheme.accent),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AuvixTheme.accent,
-                    foregroundColor: const Color(0xFF00140F),
-                  ),
-                  onPressed: () {
-                    if (input.text.trim().isEmpty) return;
-                    Navigator.pop(sheetContext);
-                    _showMessage(
-                      'Comentário demonstrativo. A gravação será integrada ao Supabase.',
-                    );
-                  },
-                  child: const Text('Enviar comentário'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    ).whenComplete(input.dispose);
+      builder: (_) => const VideoCommentsSheet(videoId: '5P0VoKseJjY'),
+    );
+  }
+
+  Future<void> _loadInteractionStatus() async {
+    try {
+      final status = await VideoInteractionsService.loadVideoStatus(
+        '5P0VoKseJjY',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _liked = status['liked'] ?? false;
+        _saved = status['saved'] ?? false;
+        _loadingInteractions = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingInteractions = false);
+      _showMessage('Não foi possível carregar suas interações.');
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_likeBusy || _loadingInteractions) return;
+
+    setState(() => _likeBusy = true);
+
+    try {
+      final result = await VideoInteractionsService.toggleVideoLike(
+        '5P0VoKseJjY',
+        _liked,
+      );
+
+      if (!mounted) return;
+
+      setState(() => _liked = result);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Não foi possível registrar sua curtida.');
+      }
+    } finally {
+      if (mounted) setState(() => _likeBusy = false);
+    }
+  }
+
+  Future<void> _toggleSaved() async {
+    if (_saveBusy || _loadingInteractions) return;
+
+    setState(() => _saveBusy = true);
+
+    try {
+      final result = await VideoInteractionsService.toggleSavedVideo(
+        '5P0VoKseJjY',
+        _saved,
+      );
+
+      if (!mounted) return;
+
+      setState(() => _saved = result);
+
+      _showMessage(
+        result
+            ? 'Vídeo salvo na sua conta!'
+            : 'Vídeo removido dos seus salvos.',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Não foi possível salvar o vídeo.');
+      }
+    } finally {
+      if (mounted) setState(() => _saveBusy = false);
+    }
   }
 
   void _shareVideo() {
@@ -342,7 +362,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                             : Icons.favorite_border_rounded,
                         label: 'Curtir',
                         active: _liked,
-                        onTap: () => setState(() => _liked = !_liked),
+                        onTap: _toggleLike,
                       ),
                       _action(
                         icon: Icons.mode_comment_outlined,
@@ -355,14 +375,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                             : Icons.bookmark_border_rounded,
                         label: 'Salvar',
                         active: _saved,
-                        onTap: () {
-                          setState(() => _saved = !_saved);
-                          _showMessage(
-                            _saved
-                                ? 'Vídeo salvo nesta sessão.'
-                                : 'Vídeo removido dos salvos nesta sessão.',
-                          );
-                        },
+                        onTap: _toggleSaved,
                       ),
                       _action(
                         icon: Icons.share_outlined,
