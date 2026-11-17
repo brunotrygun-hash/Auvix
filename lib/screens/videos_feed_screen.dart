@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
@@ -20,6 +22,8 @@ class VideosFeedScreen extends StatefulWidget {
 
 class _VideosFeedScreenState extends State<VideosFeedScreen> {
   late final YoutubePlayerController _controller;
+  bool _restarting = false;
+  late final StreamSubscription<YoutubePlayerValue> _playerSubscription;
 
   bool _liked = false;
   bool _saved = false;
@@ -46,6 +50,29 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
         pointerEvents: PointerEvents.none,
       ),
     );
+
+    _playerSubscription = _controller.listen((value) {
+      if (value.playerState == PlayerState.ended && widget.isActive) {
+        _restartVideo();
+      }
+    });
+  }
+
+  Future<void> _restartVideo() async {
+    if (_restarting || !mounted || !widget.isActive) return;
+
+    _restarting = true;
+    try {
+      await _controller.seekTo(seconds: 0, allowSeekAhead: true);
+
+      if (mounted && widget.isActive) {
+        await _controller.playVideo();
+      }
+    } catch (_) {
+      // Evita interromper a tela se o player estiver indisponível.
+    } finally {
+      _restarting = false;
+    }
   }
 
   @override
@@ -65,6 +92,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
 
   @override
   void dispose() {
+    unawaited(_playerSubscription.cancel());
     _controller.close();
     super.dispose();
   }
