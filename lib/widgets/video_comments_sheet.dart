@@ -168,7 +168,7 @@ class _VideoCommentsSheetState extends State<VideoCommentsSheet> {
         child: Image.asset(
           'assets/avatars/avatar_$number.png',
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) =>
+          errorBuilder: (context, error, stackTrace) =>
               const Icon(Icons.person, color: AuvixTheme.accent),
         ),
       ),
