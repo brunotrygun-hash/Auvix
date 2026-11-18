@@ -65,21 +65,20 @@ class CommunityService {
         .toSet()
         .toList();
 
-    final results = await Future.wait([
-      _loadProfiles(authorIds),
-      _client
-          .from('auvix_community_likes')
-          .select('post_id, user_id')
-          .inFilter('post_id', postIds),
-      _client
-          .from('auvix_community_comments')
-          .select('post_id')
-          .inFilter('post_id', postIds),
-    ]);
+    final profiles = await _loadProfiles(authorIds);
 
-    final profiles = results[0] as Map<String, Map<String, dynamic>>;
-    final likes = (results[1] as List).map(_map).toList();
-    final comments = (results[2] as List).map(_map).toList();
+    final likesRows = await _client
+        .from('auvix_community_likes')
+        .select('post_id, user_id')
+        .inFilter('post_id', postIds);
+
+    final commentsRows = await _client
+        .from('auvix_community_comments')
+        .select('post_id')
+        .inFilter('post_id', postIds);
+
+    final likes = likesRows.map(_map).toList();
+    final comments = commentsRows.map(_map).toList();
 
     final likeCounts = <String, int>{};
     final likedByMe = <String>{};

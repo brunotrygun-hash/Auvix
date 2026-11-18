@@ -233,7 +233,7 @@ class _CommunityScreenState extends State<CommunityScreen>
         child: Image.asset(
           'assets/avatars/avatar_$number.png',
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) =>
+          errorBuilder: (context, error, stackTrace) =>
               const Icon(Icons.person, color: AuvixTheme.accent),
         ),
       ),
@@ -582,7 +582,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(15, 15, 15, 30),
                           itemCount: people.length,
-                          separatorBuilder: (_, _) => const Divider(
+                          separatorBuilder: (context, index) => const Divider(
                             color: Color(0xFF1C3B4B),
                             height: 20,
                           ),
@@ -777,7 +777,7 @@ class _CommunityCommentsSheetState extends State<CommunityCommentsSheet> {
         child: Image.asset(
           'assets/avatars/avatar_$number.png',
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) =>
+          errorBuilder: (context, error, stackTrace) =>
               const Icon(Icons.person, color: AuvixTheme.accent),
         ),
       ),
