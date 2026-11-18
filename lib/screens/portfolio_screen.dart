@@ -15,6 +15,7 @@ import '../widgets/market_ticker.dart';
 import '../widgets/home_sections.dart';
 import '../widgets/economy_news_section.dart';
 import '../widgets/video_preview_card.dart';
+import '../widgets/community_preview_card.dart';
 
 import 'add_asset_screen.dart';
 import 'asset_detail_screen.dart';
@@ -268,6 +269,8 @@ class PortfolioScreenState extends State<PortfolioScreen> {
           const HomeShortcuts(),
           const SizedBox(height: 22),
           const EconomyNewsSection(),
+          const SizedBox(height: 16),
+          const CommunityPreviewCard(),
           const SizedBox(height: 22),
           const LearnInvestingBanner(),
           const SizedBox(height: 22),

@@ -40,21 +40,12 @@ class CommunityService {
   static Future<List<Map<String, dynamic>>> loadFeed() async {
     final userId = _userId;
 
-    final followRows = await _client
-        .from('auvix_community_follows')
-        .select('following_id')
-        .eq('follower_id', userId);
-
-    final userIds = <String>{
-      userId,
-      for (final row in followRows) _map(row)['following_id'].toString(),
-    }.toList();
-
+    // Mostra publicações de todos os usuários da comunidade.
     final rows = await _client
         .from('auvix_community_posts')
         .select()
-        .inFilter('user_id', userIds)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(100);
 
     final posts = rows.map(_map).toList();
     if (posts.isEmpty) return [];
@@ -114,23 +105,59 @@ class CommunityService {
     return posts;
   }
 
+  /// Carrega a publicação mais recente para a prévia da tela inicial.
+  static Future<Map<String, dynamic>?> loadLatestPreview() async {
+    _userId;
+
+    final rows = await _client
+        .from('auvix_community_posts')
+        .select('id, user_id, content, created_at')
+        .order('created_at', ascending: false)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+
+    final post = _map(rows.first);
+    final authorId = post['user_id'].toString();
+    final postId = post['id'].toString();
+
+    final profiles = await _loadProfiles([authorId]);
+    final profile = profiles[authorId];
+
+    final likesRows = await _client
+        .from('auvix_community_likes')
+        .select('user_id')
+        .eq('post_id', postId);
+
+    final commentsRows = await _client
+        .from('auvix_community_comments')
+        .select('id')
+        .eq('post_id', postId);
+
+    post['display_name'] = profile?['display_name'] ?? 'Investidor AUVIX';
+    post['avatar_index'] = profile?['avatar_index'] ?? 0;
+    post['like_count'] = likesRows.length;
+    post['comment_count'] = commentsRows.length;
+
+    return post;
+  }
+
   /// Lista outros perfis e informa se já são seguidos pelo usuário.
   static Future<List<Map<String, dynamic>>> loadPeople() async {
     final userId = _userId;
 
-    final results = await Future.wait([
-      _client
-          .from('auvix_video_profiles')
-          .select('user_id, display_name, avatar_index')
-          .neq('user_id', userId)
-          .order('display_name'),
-      _client
-          .from('auvix_community_follows')
-          .select('follower_id, following_id'),
-    ]);
+    final profileRows = await _client
+        .from('auvix_video_profiles')
+        .select('user_id, display_name, avatar_index')
+        .neq('user_id', userId)
+        .order('display_name');
 
-    final profiles = (results[0] as List).map(_map).toList();
-    final follows = (results[1] as List).map(_map).toList();
+    final followRows = await _client
+        .from('auvix_community_follows')
+        .select('follower_id, following_id');
+
+    final profiles = profileRows.map(_map).toList();
+    final follows = followRows.map(_map).toList();
 
     final following = <String>{};
     final followerCounts = <String, int>{};

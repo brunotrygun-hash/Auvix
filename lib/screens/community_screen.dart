@@ -746,8 +746,8 @@ class _CommunityCommentsSheetState extends State<CommunityCommentsSheet> {
       );
       _input.clear();
       await _load();
-    } catch (_) {
-      _message('Não foi possível enviar o comentário.');
+    } catch (error) {
+      _message('Falha ao enviar comentário: $error');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
