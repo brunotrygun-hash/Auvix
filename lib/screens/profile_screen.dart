@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../services/user_preferences.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/auvix_theme.dart';
@@ -107,29 +109,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadAvatar() async {
     final preferences = await UserPreferences.getInstance();
-    final savedAvatar = preferences.getInt(_storageKey) ?? 0;
+    final savedAvatar = preferences.getInt(_storageKey);
+
+    var selectedAvatar =
+        savedAvatar != null &&
+            savedAvatar >= 0 &&
+            savedAvatar < _avatarAssets.length
+        ? savedAvatar
+        : 0;
+
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user != null) {
+      try {
+        final client = Supabase.instance.client;
+        final profile = await client
+            .from('auvix_video_profiles')
+            .select('avatar_index')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (profile == null) {
+          final metadataName = user.userMetadata?['full_name'];
+
+          await client.from('auvix_video_profiles').insert({
+            'user_id': user.id,
+            'display_name':
+                metadataName is String && metadataName.trim().isNotEmpty
+                ? metadataName.trim()
+                : 'Investidor AUVIX',
+            'avatar_index': selectedAvatar,
+            'avatar_customized': savedAvatar != null,
+          });
+        } else {
+          final remoteAvatar = profile['avatar_index'];
+
+          if (remoteAvatar is int &&
+              remoteAvatar >= 0 &&
+              remoteAvatar < _avatarAssets.length) {
+            selectedAvatar = remoteAvatar;
+          }
+
+          // O índice remoto é a referência oficial.
+          // A escolha personalizada só é marcada em _saveAvatar().
+        }
+
+        await preferences.setInt(_storageKey, selectedAvatar);
+      } catch (error) {
+        print('AUVIX: não foi possível sincronizar o avatar: $error');
+      }
+    }
 
     if (!mounted) return;
 
     setState(() {
-      _selectedAvatar = savedAvatar >= 0 && savedAvatar < _avatarAssets.length
-          ? savedAvatar
-          : 0;
+      _selectedAvatar = selectedAvatar;
       _loading = false;
     });
   }
 
   Future<void> _saveAvatar(int index) async {
+    if (index < 0 || index >= _avatarAssets.length) {
+      _showMessage('Avatar inválido.');
+      return;
+    }
+
     final preferences = await UserPreferences.getInstance();
     await preferences.setInt(_storageKey, index);
 
     if (!mounted) return;
-
     setState(() => _selectedAvatar = index);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avatar atualizado com sucesso!')),
-    );
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        throw StateError('Usuário não autenticado.');
+      }
+
+      final updatedProfile = await Supabase.instance.client
+          .from('auvix_video_profiles')
+          .update({'avatar_index': index, 'avatar_customized': true})
+          .eq('user_id', user.id)
+          .select('user_id')
+          .maybeSingle();
+
+      if (updatedProfile == null) {
+        throw StateError('Perfil não encontrado no Supabase.');
+      }
+
+      if (!mounted) return;
+      _showMessage('Avatar sincronizado com sucesso!');
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage(
+        'Avatar salvo neste aparelho, mas não foi sincronizado. '
+        'Tente novamente.',
+      );
+      print('AUVIX: erro ao salvar avatar no Supabase: $error');
+    }
   }
 
   Future<void> _chooseAvatar() async {

@@ -1,2 +1,6 @@
 auvix-release-key.jks
 auvix-key-base64.txt
+
+# Arquivos locais de assinatura Android
+/android/key.properties
+/android/auvix-release-key.jks

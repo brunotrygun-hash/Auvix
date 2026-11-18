@@ -10,6 +10,7 @@ import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'admin_announcements_screen.dart';
 import 'videos_feed_screen.dart';
+import 'community_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -31,12 +32,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       unreadCount: _unreadCount,
       isActive: _selectedIndex == 0,
       onOpenVideos: () {
-        setState(() => _selectedIndex = 4);
+        setState(() => _selectedIndex = 5);
       },
       onOpenAlerts: () {
-        setState(() => _selectedIndex = 2);
+        setState(() => _selectedIndex = 3);
       },
     ),
+    const CommunityScreen(),
     const MoneyScreen(),
     AlertsScreen(
       onUnreadCountChanged: (count) {
@@ -45,7 +47,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ),
     MoreScreen(onOpenPage: _openPage),
     VideosFeedScreen(
-      isActive: _selectedIndex == 4,
+      isActive: _selectedIndex == 5,
       onExit: () {
         setState(() => _selectedIndex = 0);
       },
@@ -81,7 +83,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: Scaffold(
         backgroundColor: AuvixTheme.background,
         body: IndexedStack(index: _selectedIndex, children: _pages),
-        bottomNavigationBar: _selectedIndex == 4
+        bottomNavigationBar: _selectedIndex == 5
             ? null
             : NavigationBar(
                 selectedIndex: _selectedIndex,
@@ -93,6 +95,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     icon: Icon(Icons.home_outlined),
                     selectedIcon: Icon(Icons.home_rounded),
                     label: 'Início',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.people_outline_rounded),
+                    selectedIcon: Icon(Icons.people_rounded),
+                    label: 'Comunidade',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.account_balance_wallet_outlined),
