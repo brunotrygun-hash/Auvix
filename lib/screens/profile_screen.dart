@@ -111,18 +111,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final preferences = await UserPreferences.getInstance();
     final savedAvatar = preferences.getInt(_storageKey);
 
-    var selectedAvatar =
+    final hasValidSavedAvatar =
         savedAvatar != null &&
-            savedAvatar >= 0 &&
-            savedAvatar < _avatarAssets.length
-        ? savedAvatar
-        : 0;
+        savedAvatar >= 0 &&
+        savedAvatar < _avatarAssets.length;
+
+    var selectedAvatar = hasValidSavedAvatar ? savedAvatar! : 0;
 
     final user = Supabase.instance.client.auth.currentUser;
 
     if (user != null) {
       try {
         final client = Supabase.instance.client;
+
         final profile = await client
             .from('auvix_video_profiles')
             .select('avatar_index')
@@ -139,7 +140,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? metadataName.trim()
                 : 'Investidor AUVIX',
             'avatar_index': selectedAvatar,
-            'avatar_customized': savedAvatar != null,
           });
         } else {
           final remoteAvatar = profile['avatar_index'];
@@ -147,11 +147,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (remoteAvatar is int &&
               remoteAvatar >= 0 &&
               remoteAvatar < _avatarAssets.length) {
-            selectedAvatar = remoteAvatar;
-          }
+            if (remoteAvatar == 0 && hasValidSavedAvatar && savedAvatar != 0) {
+              final migrated = await client
+                  .from('auvix_video_profiles')
+                  .update({'avatar_index': savedAvatar})
+                  .eq('user_id', user.id)
+                  .select('avatar_index')
+                  .maybeSingle();
 
-          // O índice remoto é a referência oficial.
-          // A escolha personalizada só é marcada em _saveAvatar().
+              selectedAvatar = migrated == null ? remoteAvatar : savedAvatar!;
+            } else {
+              selectedAvatar = remoteAvatar;
+            }
+          }
         }
 
         await preferences.setInt(_storageKey, selectedAvatar);
@@ -188,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final updatedProfile = await Supabase.instance.client
           .from('auvix_video_profiles')
-          .update({'avatar_index': index, 'avatar_customized': true})
+          .update({'avatar_index': index})
           .eq('user_id', user.id)
           .select('user_id')
           .maybeSingle();
