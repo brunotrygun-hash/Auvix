@@ -22,6 +22,12 @@ jobs:
 
       - name: Criar plataforma Android
         run: flutter create --platforms=android .
+
+      - name: Configurar nome AMBUX
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's/android:label="[^"]*"/android:label="AMBUX"/' "$MANIFEST"
+          grep -n 'android:label' "$MANIFEST"
       - name: Desativar Lint vital de release
         run: |
           python3 - <<'PYCODE'
