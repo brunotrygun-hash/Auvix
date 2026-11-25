@@ -81,7 +81,7 @@ class _CommunityPreviewCardState extends State<CommunityPreviewCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    post['display_name']?.toString() ?? 'Investidor AUVIX',
+                    post['display_name']?.toString() ?? 'Investidor AMBUX',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -188,7 +188,7 @@ class _CommunityPreviewCardState extends State<CommunityPreviewCard> {
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Text(
-                          'Comunidade AUVIX',
+                          'Comunidade AMBUX',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 15,

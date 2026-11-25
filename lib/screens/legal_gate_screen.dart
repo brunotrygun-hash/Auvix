@@ -156,7 +156,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Para continuar usando o AUVIX, leia e aceite os documentos atualizados.',
+                    'Para continuar usando o AMBUX, leia e aceite os documentos atualizados.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AuvixTheme.muted),
                   ),

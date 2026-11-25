@@ -104,11 +104,11 @@ class EconomyNewsService {
 
             final response = await client.get(
               uri,
-              headers: {'User-Agent': 'Mozilla/5.0 AUVIX'},
+              headers: {'User-Agent': 'Mozilla/5.0 AMBUX'},
             ).timeout(const Duration(seconds: 12));
 
             if (response.statusCode != 200) {
-              print("AUVIX noticias: HTTP ${response.statusCode} na pesquisa: $query");
+              print("AMBUX noticias: HTTP ${response.statusCode} na pesquisa: $query");
               return <EconomyNews>[];
             }
 
@@ -174,7 +174,7 @@ if (image != null && !image.startsWith("http://") && !image.startsWith("https://
                   age.inHours <= 168;
             }).toList();
           } catch (e, stackTrace) {
-            print("AUVIX noticias: erro ao consultar RSS: $e");
+            print("AMBUX noticias: erro ao consultar RSS: $e");
             print(stackTrace);
             return <EconomyNews>[];
           }
@@ -197,17 +197,17 @@ if (image != null && !image.startsWith("http://") && !image.startsWith("https://
       final enrichedNews = await Future.wait(
         visibleNews.map((item) async {
           if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
-            print('AUVIX imagem: URL encontrada no RSS para ${item.source}');
+            print('AMBUX imagem: URL encontrada no RSS para ${item.source}');
             return item;
           }
 
-          print('AUVIX imagem: buscando imagem na página de ${item.source}');
+          print('AMBUX imagem: buscando imagem na página de ${item.source}');
           final image = await _fetchImage(item.url);
 
           print(
             image == null
-                ? 'AUVIX imagem: nenhuma imagem encontrada para ${item.source}'
-                : 'AUVIX imagem: URL encontrada na página de ${item.source}',
+                ? 'AMBUX imagem: nenhuma imagem encontrada para ${item.source}'
+                : 'AMBUX imagem: URL encontrada na página de ${item.source}',
           );
 
           return EconomyNews(

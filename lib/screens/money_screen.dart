@@ -532,7 +532,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'O AUVIX usa esta área para ajudar você a organizar o dinheiro reservado para futuros investimentos.',
+                      'O AMBUX usa esta área para ajudar você a organizar o dinheiro reservado para futuros investimentos.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         height: 1.4,

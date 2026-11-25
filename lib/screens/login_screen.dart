@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   Text(
                     isCreatingAccount
-                        ? 'Crie sua conta para começar a usar o AUVIX.'
+                        ? 'Crie sua conta para começar a usar o AMBUX.'
                         : 'Acompanhe seus investimentos em um só lugar.',
                     style: const TextStyle(color: AuvixTheme.muted),
                   ),
@@ -329,7 +329,7 @@ class _AuvixBrand extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'AUVIX',
+          'AMBUX',
           style: TextStyle(
             fontSize: large ? 42 : 24,
             fontWeight: FontWeight.w900,

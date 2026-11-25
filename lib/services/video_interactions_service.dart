@@ -139,7 +139,7 @@ class VideoCommentsService {
       final id = comment['id'].toString();
       final profile = profileMap[comment['user_id'].toString()];
 
-      comment['display_name'] = profile?['display_name'] ?? 'Investidor AUVIX';
+      comment['display_name'] = profile?['display_name'] ?? 'Investidor AMBUX';
       comment['avatar_index'] = profile?['avatar_index'] ?? 0;
       comment['like_count'] = likeCounts[id] ?? 0;
       comment['liked_by_me'] = likedByMe.contains(id);

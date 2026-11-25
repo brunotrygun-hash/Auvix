@@ -409,7 +409,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             const SizedBox(height: 10),
             const Text(
               'Quando houver uma atualização, novidade ou novo recurso '
-              'do AUVIX, o comunicado aparecerá aqui.',
+              'do AMBUX, o comunicado aparecerá aqui.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AuvixTheme.muted, height: 1.5),
             ),
@@ -505,7 +505,7 @@ class _MoreScreenState extends State<MoreScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Sair da conta?'),
         content: const Text(
-          'Você precisará entrar novamente para acessar o AUVIX.',
+          'Você precisará entrar novamente para acessar o AMBUX.',
         ),
         actions: [
           TextButton(
@@ -556,7 +556,7 @@ class _MoreScreenState extends State<MoreScreen> {
       ('Perfil', Icons.person_outline_rounded),
       ('Configurações', Icons.settings_outlined),
       ('Ajuda', Icons.help_outline_rounded),
-      ('Sobre o AUVIX', Icons.info_outline_rounded),
+      ('Sobre o AMBUX', Icons.info_outline_rounded),
       ('Política de Privacidade', Icons.privacy_tip_outlined),
       ('Termos de Uso', Icons.description_outlined),
     ];
@@ -584,7 +584,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   Icons.admin_panel_settings_rounded,
                   color: AuvixTheme.accent,
                 ),
-                title: const Text('Administração AUVIX'),
+                title: const Text('Administração AMBUX'),
                 subtitle: const Text("Gerenciar comunicados oficiais"),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () {
@@ -637,7 +637,7 @@ class MoreDetailScreen extends StatelessWidget {
       return LegalDocumentScreen(title: title);
     }
 
-    if (title == 'Sobre o AUVIX') {
+    if (title == 'Sobre o AMBUX') {
       return const _AboutAuvixScreen();
     }
 
@@ -716,7 +716,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: AuvixTheme.text),
               ),
               subtitle: Text(
-                'O AUVIX utiliza sempre o tema escuro.',
+                'O AMBUX utiliza sempre o tema escuro.',
                 style: TextStyle(color: AuvixTheme.muted),
               ),
               trailing: Icon(
@@ -741,7 +741,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: Text(
                 _loading
                     ? 'Carregando preferência...'
-                    : 'Avisos sobre novidades e atualizações do AUVIX.',
+                    : 'Avisos sobre novidades e atualizações do AMBUX.',
                 style: const TextStyle(color: AuvixTheme.muted),
               ),
               value: _officialNotificationsEnabled,
@@ -755,7 +755,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Essa opção salva sua preferência. O envio de notificações '
               'ao celular dependerá da integração futura com o serviço '
-              'de notificações do AUVIX.',
+              'de notificações do AMBUX.',
               style: TextStyle(
                 color: AuvixTheme.muted,
                 fontSize: 12,
@@ -791,7 +791,7 @@ class HelpScreen extends StatelessWidget {
       icon: Icons.rocket_launch_outlined,
       title: 'Primeiros passos',
       description:
-          'Conheça as áreas do AUVIX. Use a navegação inferior para acessar '
+          'Conheça as áreas do AMBUX. Use a navegação inferior para acessar '
           'Início, Dinheiro, Alertas e Mais. No menu Mais você encontra '
           'outras opções do aplicativo.',
     ),
@@ -841,14 +841,14 @@ class HelpScreen extends StatelessWidget {
       title: 'Aprenda a Investir',
       description:
           'Acesse a área de aprendizado para consultar as aulas e os módulos '
-          'disponíveis no AUVIX. Siga o conteúdo apresentado em cada aula '
+          'disponíveis no AMBUX. Siga o conteúdo apresentado em cada aula '
           'e utilize as atividades de aprendizado quando disponíveis.',
     ),
     _HelpTopic(
       icon: Icons.notifications_none_rounded,
       title: 'Alertas',
       description:
-          'Consulte os comunicados oficiais do AUVIX sobre novidades, '
+          'Consulte os comunicados oficiais do AMBUX sobre novidades, '
           'atualizações e novos recursos. Quando não houver comunicados '
           'publicados, a tela informará que não há novidades no momento.',
     ),
@@ -859,7 +859,7 @@ class HelpScreen extends StatelessWidget {
       icon: Icons.lock_outline_rounded,
       title: 'Meus dados ficam salvos?',
       description:
-          'O salvamento depende da funcionalidade utilizada. O AUVIX usa '
+          'O salvamento depende da funcionalidade utilizada. O AMBUX usa '
           'recursos de conta e armazenamento para manter informações. '
           'Confira sempre se a operação foi concluída com sucesso.',
     ),
@@ -918,7 +918,7 @@ class HelpScreen extends StatelessWidget {
                 SizedBox(height: 6),
                 Text(
                   'Encontre orientações para aproveitar melhor os recursos '
-                  'do AUVIX.',
+                  'do AMBUX.',
                   style: TextStyle(
                     color: AuvixTheme.muted,
                     fontSize: 14,
@@ -955,7 +955,7 @@ class HelpScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Center(
             child: Text(
-              'AUVIX • Sua vida financeira em evolução',
+              'AMBUX • Sua vida financeira em evolução',
               textAlign: TextAlign.center,
               style: TextStyle(color: AuvixTheme.muted, fontSize: 12),
             ),
@@ -1017,7 +1017,7 @@ class _AboutAuvixScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AuvixTheme.background,
-      appBar: AppBar(title: const Text('Sobre o AUVIX')),
+      appBar: AppBar(title: const Text('Sobre o AMBUX')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -1044,7 +1044,7 @@ class _AboutAuvixScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'AUVIX',
+                  'AMBUX',
                   style: TextStyle(
                     color: AuvixTheme.accent,
                     fontSize: 30,
@@ -1070,13 +1070,13 @@ class _AboutAuvixScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const _AboutSectionTitle(title: 'Sobre o aplicativo'),
           const Text(
-            'O AUVIX foi desenvolvido para ajudar você a organizar sua '
+            'O AMBUX foi desenvolvido para ajudar você a organizar sua '
             'vida financeira, acompanhar seus investimentos, construir '
             'patrimônio e planejar seus objetivos com mais conhecimento.',
             style: TextStyle(fontSize: 15, height: 1.6),
           ),
           const SizedBox(height: 24),
-          const _AboutSectionTitle(title: 'O que você encontra no AUVIX'),
+          const _AboutSectionTitle(title: 'O que você encontra no AMBUX'),
           const _AboutFeature(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Acompanhamento de investimentos',
@@ -1133,7 +1133,7 @@ class _AboutAuvixScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  'O AUVIX não é uma plataforma de investimentos, '
+                  'O AMBUX não é uma plataforma de investimentos, '
                   'corretora ou instituição financeira. É um aplicativo '
                   'de organização e acompanhamento financeiro, destinado '
                   'a auxiliar o usuário no controle de seus investimentos, '
@@ -1235,7 +1235,7 @@ class LegalDocumentScreen extends StatelessWidget {
   static const _privacySections = <(String, String)>[
     (
       '1. Responsável pelo aplicativo',
-      'O AUVIX é um aplicativo de acompanhamento e organização financeira. '
+      'O AMBUX é um aplicativo de acompanhamento e organização financeira. '
           'O responsável pelo tratamento dos dados pessoais relacionados ao aplicativo é Bruno Fernandes. '
           'Contato: techalkstore@gmail.com.',
     ),
@@ -1254,14 +1254,14 @@ class LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '4. Cadastro e autenticação',
-      'O AUVIX permite criar uma conta e entrar com e-mail e senha por meio do Supabase. '
+      'O AMBUX permite criar uma conta e entrar com e-mail e senha por meio do Supabase. '
           'As informações necessárias à autenticação são processadas por esse serviço externo, '
           'conforme suas próprias práticas e políticas de privacidade. '
           'O usuário deve utilizar uma senha forte e evitar reutilizar senhas de outros serviços.',
     ),
     (
       '5. Serviços externos',
-      'O AUVIX consulta fontes externas para apresentar notícias econômicas e indicadores de mercado. '
+      'O AMBUX consulta fontes externas para apresentar notícias econômicas e indicadores de mercado. '
           'Entre elas estão o Google News e os serviços públicos de dados do Banco Central do Brasil. '
           'Essas consultas utilizam parâmetros relacionados às notícias e aos indicadores, '
           'não os valores financeiros cadastrados pelo usuário. '
@@ -1271,7 +1271,7 @@ class LegalDocumentScreen extends StatelessWidget {
     (
       '6. Compartilhamento de informações',
       'O aplicativo não possui, na versão atual, uma funcionalidade própria de envio '
-          'dos dados financeiros cadastrados para outros usuários ou para um servidor do AUVIX. '
+          'dos dados financeiros cadastrados para outros usuários ou para um servidor do AMBUX. '
           'Os serviços externos utilizados possuem suas próprias regras de privacidade '
           'e podem receber informações técnicas necessárias à conexão.',
     ),
@@ -1312,8 +1312,8 @@ class LegalDocumentScreen extends StatelessWidget {
 
   static const _termsSections = <(String, String)>[
     (
-      '1. Sobre o AUVIX',
-      'O AUVIX é um aplicativo destinado à organização e ao acompanhamento pessoal '
+      '1. Sobre o AMBUX',
+      'O AMBUX é um aplicativo destinado à organização e ao acompanhamento pessoal '
           'de informações financeiras, investimentos, patrimônio, metas e conteúdos educativos.',
     ),
     (
@@ -1323,7 +1323,7 @@ class LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '3. Cadastro e autenticação',
-      'O AUVIX exige cadastro e autenticação com e-mail e senha por meio do Supabase '
+      'O AMBUX exige cadastro e autenticação com e-mail e senha por meio do Supabase '
           'para acessar as funcionalidades protegidas. O usuário deve utilizar '
           'credenciais próprias e manter sua senha em segurança. '
           'O acesso depende da disponibilidade do serviço de autenticação.',
@@ -1331,7 +1331,7 @@ class LegalDocumentScreen extends StatelessWidget {
     (
       '4. Responsabilidade pelas informações',
       'O usuário é responsável pelos dados e valores que cadastra no aplicativo. '
-          'O AUVIX funciona como ferramenta de organização e acompanhamento; '
+          'O AMBUX funciona como ferramenta de organização e acompanhamento; '
           'não substitui extratos oficiais, documentos de instituições financeiras '
           'ou registros mantidos por corretoras e bancos.',
     ),
@@ -1344,7 +1344,7 @@ class LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '6. Não é recomendação de investimento',
-      'O AUVIX não é uma corretora, banco, consultoria ou instituição financeira. '
+      'O AMBUX não é uma corretora, banco, consultoria ou instituição financeira. '
           'Os conteúdos e cálculos apresentados têm finalidade informativa e educativa. '
           'Não constituem recomendação individual de compra, venda ou manutenção de ativos. '
           'Toda decisão financeira deve ser avaliada pelo próprio usuário, considerando '
@@ -1383,7 +1383,7 @@ class LegalDocumentScreen extends StatelessWidget {
     ),
     (
       '12. Contato',
-      'Dúvidas, sugestões ou solicitações relacionadas ao AUVIX podem ser encaminhadas para '
+      'Dúvidas, sugestões ou solicitações relacionadas ao AMBUX podem ser encaminhadas para '
           'techalkstore@gmail.com. Responsável pelo aplicativo: Bruno Fernandes.',
     ),
     ('Última atualização', '9 de novembro de 2026.'),
@@ -1412,7 +1412,7 @@ class LegalDocumentScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'AUVIX • Documento informativo',
+            'AMBUX • Documento informativo',
             style: TextStyle(color: AuvixTheme.muted, fontSize: 13),
           ),
           const SizedBox(height: 20),

@@ -17,7 +17,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<_OnboardingPage> pages = const [
     _OnboardingPage(
       icon: Icons.account_balance_wallet_rounded,
-      title: 'Bem-vindo ao AUVIX',
+      title: 'Bem-vindo ao AMBUX',
       description:
           'Seu dinheiro, seus investimentos, seu controle.',
     ),
@@ -43,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.auto_graph_rounded,
       title: 'Tudo em um só lugar',
       description:
-          'Agora você já conhece o AUVIX. Vamos começar?',
+          'Agora você já conhece o AMBUX. Vamos começar?',
     ),
   ];
 
@@ -182,7 +182,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onPressed: nextPage,
                   child: Text(
                     currentPage == pages.length - 1
-                        ? 'COMEÇAR A USAR O AUVIX'
+                        ? 'COMEÇAR A USAR O AMBUX'
                         : 'CONTINUAR',
                   ),
                 ),

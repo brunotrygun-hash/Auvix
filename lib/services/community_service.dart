@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Serviço responsável exclusivamente pelas interações da Comunidade AUVIX.
+/// Serviço responsável exclusivamente pelas interações da Comunidade AMBUX.
 /// Não utiliza nem altera as tabelas de comentários dos vídeos.
 class CommunityService {
   static final SupabaseClient _client = Supabase.instance.client;
@@ -94,7 +94,7 @@ class CommunityService {
       final authorId = post['user_id'].toString();
       final profile = profiles[authorId];
 
-      post['display_name'] = profile?['display_name'] ?? 'Investidor AUVIX';
+      post['display_name'] = profile?['display_name'] ?? 'Investidor AMBUX';
       post['avatar_index'] = profile?['avatar_index'] ?? 0;
       post['like_count'] = likeCounts[id] ?? 0;
       post['liked_by_me'] = likedByMe.contains(id);
@@ -134,7 +134,7 @@ class CommunityService {
         .select('id')
         .eq('post_id', postId);
 
-    post['display_name'] = profile?['display_name'] ?? 'Investidor AUVIX';
+    post['display_name'] = profile?['display_name'] ?? 'Investidor AMBUX';
     post['avatar_index'] = profile?['avatar_index'] ?? 0;
     post['like_count'] = likesRows.length;
     post['comment_count'] = commentsRows.length;
@@ -228,7 +228,7 @@ class CommunityService {
       final authorId = comment['user_id'].toString();
       final profile = profiles[authorId];
 
-      comment['display_name'] = profile?['display_name'] ?? 'Investidor AUVIX';
+      comment['display_name'] = profile?['display_name'] ?? 'Investidor AMBUX';
       comment['avatar_index'] = profile?['avatar_index'] ?? 0;
       comment['is_mine'] = authorId == userId;
     }

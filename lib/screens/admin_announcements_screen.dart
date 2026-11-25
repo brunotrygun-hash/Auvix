@@ -287,7 +287,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Administração AUVIX'),
+        title: const Text('Administração AMBUX'),
         actions: [
           IconButton(
             onPressed: _loading ? null : _loadAnnouncements,
@@ -312,7 +312,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Acesso restrito à administração do AUVIX.',
+                  'Acesso restrito à administração do AMBUX.',
                   textAlign: TextAlign.center,
                 ),
               ),

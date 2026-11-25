@@ -147,7 +147,7 @@ class PortfolioScreenState extends State<PortfolioScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'AUVIX',
+          'AMBUX',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
         ),
         actions: [

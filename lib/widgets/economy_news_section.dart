@@ -397,7 +397,7 @@ class _EconomyNewsSectionState extends State<EconomyNewsSection> {
             left: 5,
             top: 5,
             child: Text(
-              'AUVIX',
+              'AMBUX',
               style: TextStyle(
                 color: AuvixTheme.accent,
                 fontSize: height * 0.12,
@@ -656,7 +656,7 @@ class EconomyNewsDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Conteúdo informativo. AUVIX não recomenda compra ou venda de ativos.',
+            'Conteúdo informativo. AMBUX não recomenda compra ou venda de ativos.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AuvixTheme.muted, fontSize: 11),
           ),

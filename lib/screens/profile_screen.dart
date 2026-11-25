@@ -138,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'display_name':
                 metadataName is String && metadataName.trim().isNotEmpty
                 ? metadataName.trim()
-                : 'Investidor AUVIX',
+                : 'Investidor AMBUX',
             'avatar_index': selectedAvatar,
           });
         } else {
@@ -164,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         await preferences.setInt(_storageKey, selectedAvatar);
       } catch (error) {
-        print('AUVIX: não foi possível sincronizar o avatar: $error');
+        print('AMBUX: não foi possível sincronizar o avatar: $error');
       }
     }
 
@@ -213,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'Avatar salvo neste aparelho, mas não foi sincronizado. '
         'Tente novamente.',
       );
-      print('AUVIX: erro ao salvar avatar no Supabase: $error');
+      print('AMBUX: erro ao salvar avatar no Supabase: $error');
     }
   }
 

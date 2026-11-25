@@ -199,7 +199,7 @@ class _VideoCommentsSheetState extends State<VideoCommentsSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comment['display_name']?.toString() ?? 'Investidor AUVIX',
+                      comment['display_name']?.toString() ?? 'Investidor AMBUX',
                       style: const TextStyle(
                         color: AuvixTheme.accent,
                         fontWeight: FontWeight.w800,

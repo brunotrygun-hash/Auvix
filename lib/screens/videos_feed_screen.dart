@@ -270,7 +270,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                         onTap: () async {
                           Navigator.pop(sheetContext);
                           final text = Uri.encodeComponent(
-                            'Confira este vídeo do AUVIX: $_videoUrl',
+                            'Confira este vídeo do AMBUX: $_videoUrl',
                           );
                           await _openShareDestination(
                             'https://wa.me/?text=$text',
@@ -477,7 +477,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                           ),
                           const SizedBox(width: 12),
                           const Text(
-                            'AUVIX',
+                            'AMBUX',
                             style: TextStyle(
                               color: AuvixTheme.accent,
                               fontSize: 21,

@@ -148,7 +148,7 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'AUVIX VÍDEOS',
+                            'AMBUX VÍDEOS',
                             style: TextStyle(
                               color: AuvixTheme.accent,
                               fontSize: 10,

@@ -75,7 +75,7 @@ class _AuvixAppState extends State<AuvixApp> {
     final session = Supabase.instance.client.auth.currentSession;
 
     return MaterialApp(
-      title: 'AUVIX',
+      title: 'AMBUX',
       debugShowCheckedModeBanner: false,
       theme: AuvixTheme.dark(),
       home: _isPasswordRecovery

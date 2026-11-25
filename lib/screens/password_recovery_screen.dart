@@ -100,7 +100,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Escolha uma senha nova para acessar sua conta AUVIX.',
+                    'Escolha uma senha nova para acessar sua conta AMBUX.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AuvixTheme.muted),
                   ),

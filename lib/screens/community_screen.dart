@@ -264,7 +264,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post['display_name']?.toString() ?? 'Investidor AUVIX',
+                      post['display_name']?.toString() ?? 'Investidor AMBUX',
                       style: const TextStyle(
                         color: AuvixTheme.accent,
                         fontWeight: FontWeight.w800,
@@ -362,7 +362,7 @@ class _CommunityScreenState extends State<CommunityScreen>
               ),
               const Spacer(),
               const Text(
-                'AUVIX',
+                'AMBUX',
                 style: TextStyle(
                   color: AuvixTheme.muted,
                   fontSize: 10,
@@ -601,7 +601,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                     children: [
                                       Text(
                                         person['display_name']?.toString() ??
-                                            'Investidor AUVIX',
+                                            'Investidor AMBUX',
                                         style: const TextStyle(
                                           color: AuvixTheme.text,
                                           fontWeight: FontWeight.w700,
@@ -849,7 +849,7 @@ class _CommunityCommentsSheetState extends State<CommunityCommentsSheet> {
                                   children: [
                                     Text(
                                       comment['display_name']?.toString() ??
-                                          'Investidor AUVIX',
+                                          'Investidor AMBUX',
                                       style: const TextStyle(
                                         color: AuvixTheme.accent,
                                         fontWeight: FontWeight.w800,
