@@ -138,29 +138,37 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     }
   }
 
-  double _verticalDragDistance = 0;
+  int? _verticalPointer;
+  double? _verticalStartY;
 
-  void _handleVerticalDragStart(DragStartDetails details) {
-    _verticalDragDistance = 0;
+  void _handlePointerDown(PointerDownEvent event) {
+    if (_verticalPointer != null) return;
+    _verticalPointer = event.pointer;
+    _verticalStartY = event.position.dy;
   }
 
-  void _handleVerticalDragUpdate(DragUpdateDetails details) {
-    _verticalDragDistance += details.primaryDelta ?? 0;
-  }
+  void _handlePointerUp(PointerUpEvent event) {
+    if (event.pointer != _verticalPointer) return;
 
-  void _handleVerticalDragEnd(DragEndDetails details) {
-    final distance = _verticalDragDistance;
-    final velocity = details.primaryVelocity ?? 0;
-    _verticalDragDistance = 0;
+    final startY = _verticalStartY;
+    final distance = startY == null ? 0.0 : event.position.dy - startY;
 
-    if (distance.abs() < 60 && velocity.abs() < 350) return;
+    _verticalPointer = null;
+    _verticalStartY = null;
 
-    final direction = distance.abs() >= 60 ? distance : velocity;
-    final targetIndex = direction < 0 ? _currentIndex + 1 : _currentIndex - 1;
+    if (distance.abs() < 70) return;
+
+    final targetIndex = distance < 0 ? _currentIndex + 1 : _currentIndex - 1;
 
     if (targetIndex < 0 || targetIndex >= _videos.length) return;
 
     unawaited(_onPageChanged(targetIndex));
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    if (event.pointer != _verticalPointer) return;
+    _verticalPointer = null;
+    _verticalStartY = null;
   }
 
   Future<void> _onPageChanged(int index) async {
@@ -599,11 +607,11 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
       return const ColoredBox(color: Color(0xFF06121A));
     }
 
-    return GestureDetector(
+    return Listener(
       behavior: HitTestBehavior.opaque,
-      onVerticalDragStart: _handleVerticalDragStart,
-      onVerticalDragUpdate: _handleVerticalDragUpdate,
-      onVerticalDragEnd: _handleVerticalDragEnd,
+      onPointerDown: _handlePointerDown,
+      onPointerUp: _handlePointerUp,
+      onPointerCancel: _handlePointerCancel,
       child: YoutubePlayer(
         controller: _controller!,
         aspectRatio: 9 / 16,
@@ -613,13 +621,6 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _togglePlayback,
-                  child: const SizedBox.expand(),
-                ),
-              ),
               IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -795,14 +796,6 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                   ],
                 ),
               ),
-              if (isCurrent && !_playing)
-                Center(
-                  child: _roundButton(
-                    icon: Icons.play_arrow_rounded,
-                    size: 68,
-                    onTap: _togglePlayback,
-                  ),
-                ),
             ],
           );
         },
