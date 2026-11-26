@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,9 +25,9 @@ class VideosFeedScreen extends StatefulWidget {
 }
 
 class _VideosFeedScreenState extends State<VideosFeedScreen> {
-  final PageController _pageController = PageController();
-  final List<YoutubePlayerController> _controllers = [];
-  final List<StreamSubscription<YoutubePlayerValue>> _subscriptions = [];
+  YoutubePlayerController? _controller;
+  StreamSubscription<YoutubePlayerValue>? _subscription;
+  int _switchToken = 0;
 
   List<Map<String, dynamic>> _videos = [];
   int _currentIndex = 0;
@@ -81,114 +79,95 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
         return;
       }
 
-      for (var i = 0; i < validVideos.length; i++) {
-        final videoId = validVideos[i]['youtube_id'].toString();
+      final firstVideoId = validVideos.first['youtube_id'].toString();
 
-        final controller = YoutubePlayerController.fromVideoId(
-          videoId: videoId,
-          autoPlay: i == 0 && widget.isActive,
-          params: const YoutubePlayerParams(
-            showControls: false,
-            showFullscreenButton: false,
-            mute: false,
-            loop: true,
-            playsInline: true,
-            privacyEnhancedMode: true,
-            pointerEvents: PointerEvents.none,
-          ),
-        );
+      final controller = YoutubePlayerController.fromVideoId(
+        videoId: firstVideoId,
+        autoPlay: widget.isActive,
+        params: const YoutubePlayerParams(
+          showControls: false,
+          showFullscreenButton: false,
+          mute: false,
+          loop: true,
+          playsInline: true,
+          privacyEnhancedMode: true,
+          pointerEvents: PointerEvents.none,
+        ),
+      );
 
-        _controllers.add(controller);
+      _controller = controller;
 
-        _subscriptions.add(
-          controller.listen((value) {
-            if (value.playerState == PlayerState.ended &&
-                i == _currentIndex &&
-                widget.isActive) {
-              _restartVideo(i);
-            }
-          }),
-        );
-      }
+      _subscription = controller.listen((value) {
+        if (value.playerState == PlayerState.ended &&
+            widget.isActive &&
+            mounted) {
+          _restartVideo();
+        }
+      });
 
       setState(() {
         _videos = validVideos;
         _loading = false;
+        _playing = widget.isActive;
       });
 
       _loadInteractionStatus();
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
       _showMessage('Não foi possível carregar os vídeos.');
     }
   }
 
-  Future<void> _restartVideo(int index) async {
-    if (_restarting ||
-        !mounted ||
-        !widget.isActive ||
-        index != _currentIndex ||
-        index >= _controllers.length) {
+  Future<void> _restartVideo() async {
+    final controller = _controller;
+    if (_restarting || !mounted || !widget.isActive || controller == null) {
       return;
     }
 
     _restarting = true;
     try {
-      final controller = _controllers[index];
       await controller.seekTo(seconds: 0, allowSeekAhead: true);
-
-      if (mounted && widget.isActive && index == _currentIndex) {
+      if (mounted && widget.isActive) {
         await controller.playVideo();
       }
     } catch (_) {
-      // Evita interromper o feed se o player estiver indisponível.
+      // Mantém o feed funcional caso o player esteja indisponível.
     } finally {
       _restarting = false;
     }
   }
 
-  final Map<int, Offset> _swipePointers = {};
+  double _verticalDragDistance = 0;
 
-  void _handleSwipePointerDown(PointerDownEvent event) {
-    _swipePointers[event.pointer] = event.position;
+  void _handleVerticalDragStart(DragStartDetails details) {
+    _verticalDragDistance = 0;
   }
 
-  void _handleSwipePointerUp(PointerUpEvent event) {
-    final start = _swipePointers.remove(event.pointer);
-    if (start == null || !_pageController.hasClients) return;
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    _verticalDragDistance += details.primaryDelta ?? 0;
+  }
 
-    final delta = event.position - start;
+  void _handleVerticalDragEnd(DragEndDetails details) {
+    final distance = _verticalDragDistance;
+    final velocity = details.primaryVelocity ?? 0;
+    _verticalDragDistance = 0;
 
-    if (delta.dy.abs() < 60 || delta.dy.abs() < delta.dx.abs()) {
-      return;
-    }
+    if (distance.abs() < 60 && velocity.abs() < 350) return;
 
-    final targetIndex = delta.dy < 0 ? _currentIndex + 1 : _currentIndex - 1;
+    final direction = distance.abs() >= 60 ? distance : velocity;
+    final targetIndex = direction < 0 ? _currentIndex + 1 : _currentIndex - 1;
 
     if (targetIndex < 0 || targetIndex >= _videos.length) return;
 
-    _pageController.animateToPage(
-      targetIndex,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _handleSwipePointerCancel(PointerCancelEvent event) {
-    _swipePointers.remove(event.pointer);
+    unawaited(_onPageChanged(targetIndex));
   }
 
   Future<void> _onPageChanged(int index) async {
-    if (index < 0 || index >= _controllers.length) return;
+    if (index < 0 || index >= _videos.length || _controller == null) return;
 
-    final previousIndex = _currentIndex;
-
-    if (previousIndex < _controllers.length) {
-      await _controllers[previousIndex].pauseVideo();
-    }
-
-    if (!mounted) return;
+    final token = ++_switchToken;
+    final videoId = _videos[index]['youtube_id'].toString();
 
     setState(() {
       _currentIndex = index;
@@ -200,10 +179,19 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
       _saveBusy = false;
     });
 
-    if (widget.isActive) {
-      await _controllers[index].playVideo();
+    try {
+      if (widget.isActive) {
+        await _controller!.loadVideoById(videoId: videoId);
+      } else {
+        await _controller!.cueVideoById(videoId: videoId);
+      }
+    } catch (_) {
+      if (mounted && token == _switchToken) {
+        _showMessage('Não foi possível iniciar este vídeo.');
+      }
     }
 
+    if (!mounted || token != _switchToken) return;
     _loadInteractionStatus();
   }
 
@@ -211,13 +199,13 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   void didUpdateWidget(covariant VideosFeedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.isActive != widget.isActive &&
-        _currentIndex < _controllers.length) {
+    final controller = _controller;
+    if (oldWidget.isActive != widget.isActive && controller != null) {
       if (widget.isActive) {
-        _controllers[_currentIndex].playVideo();
+        controller.playVideo();
         _playing = true;
       } else {
-        _controllers[_currentIndex].pauseVideo();
+        controller.pauseVideo();
         _playing = false;
       }
     }
@@ -225,24 +213,16 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
 
   @override
   void dispose() {
-    for (final subscription in _subscriptions) {
-      unawaited(subscription.cancel());
-    }
-
-    for (final controller in _controllers) {
-      controller.close();
-    }
-
-    _pageController.dispose();
+    unawaited(_subscription?.cancel());
+    _controller?.close();
     super.dispose();
   }
 
   Future<void> _togglePlayback() async {
-    if (_currentIndex >= _controllers.length) return;
+    final controller = _controller;
+    if (controller == null) return;
 
-    final controller = _controllers[_currentIndex];
     final shouldPlay = !_playing;
-
     setState(() => _playing = shouldPlay);
 
     if (shouldPlay) {
@@ -610,220 +590,223 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     );
   }
 
-  Widget _buildVideoPage(int index) {
-    final video = _videos[index];
-    final isCurrent = index == _currentIndex;
-    final title = video['title']?.toString() ?? 'Vídeo AMBUX';
-    final description = video['description']?.toString() ?? '';
+  Widget _buildVideoPage() {
+    final isCurrent = _currentVideo != null;
+    final title = _videoTitle;
+    final description = _videoDescription;
 
-    return YoutubePlayer(
-      controller: _controllers[index],
-      aspectRatio: 9 / 16,
-      enableFullScreenOnVerticalDrag: false,
-      gestureRecognizers: const {},
-      controlsBuilder: (playerContext, isFullscreen) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: _handleSwipePointerDown,
-                onPointerUp: _handleSwipePointerUp,
-                onPointerCancel: _handleSwipePointerCancel,
+    if (_controller == null) {
+      return const ColoredBox(color: Color(0xFF06121A));
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragStart: _handleVerticalDragStart,
+      onVerticalDragUpdate: _handleVerticalDragUpdate,
+      onVerticalDragEnd: _handleVerticalDragEnd,
+      child: YoutubePlayer(
+        controller: _controller!,
+        aspectRatio: 9 / 16,
+        enableFullScreenOnVerticalDrag: false,
+        gestureRecognizers: const {},
+        controlsBuilder: (playerContext, isFullscreen) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: isCurrent ? _togglePlayback : null,
+                  onTap: _togglePlayback,
                   child: const SizedBox.expand(),
                 ),
               ),
-            ),
-            IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.48),
-                      Colors.transparent,
-                      Colors.transparent,
-                      const Color(0xE606121A),
-                    ],
-                    stops: const [0, 0.22, 0.58, 1],
+              IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.48),
+                        Colors.transparent,
+                        Colors.transparent,
+                        const Color(0xE606121A),
+                      ],
+                      stops: const [0, 0.22, 0.58, 1],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 8,
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        _roundButton(
+                          icon: Icons.arrow_back_rounded,
+                          onTap: widget.onExit,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'AMBUX',
+                          style: TextStyle(
+                            color: AuvixTheme.accent,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 3,
+                            shadows: [
+                              Shadow(color: AuvixTheme.accent, blurRadius: 12),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        const Text(
+                          'VÍDEOS',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
+                ),
+              ),
+              if (isCurrent)
+                Positioned(
+                  right: 13,
+                  bottom: 155,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _roundButton(
-                        icon: Icons.arrow_back_rounded,
-                        onTap: widget.onExit,
+                      _action(
+                        icon: _liked
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        label: 'Curtir',
+                        active: _liked,
+                        onTap: _toggleLike,
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'AMBUX',
+                      _action(
+                        icon: Icons.mode_comment_outlined,
+                        label: 'Comentar',
+                        onTap: _showComments,
+                      ),
+                      _action(
+                        icon: _saved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        label: 'Salvar',
+                        active: _saved,
+                        onTap: _toggleSaved,
+                      ),
+                      _action(
+                        icon: Icons.share_outlined,
+                        label: 'Enviar',
+                        onTap: _shareVideo,
+                      ),
+                    ],
+                  ),
+                ),
+              Positioned(
+                left: 20,
+                right: 88,
+                bottom: 35,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AuvixTheme.accent.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AuvixTheme.accent.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      child: const Text(
+                        'EDUCAÇÃO FINANCEIRA',
                         style: TextStyle(
                           color: AuvixTheme.accent,
-                          fontSize: 21,
+                          fontSize: 9,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 3,
-                          shadows: [
-                            Shadow(color: AuvixTheme.accent, blurRadius: 12),
-                          ],
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      const Spacer(),
-                      const Text(
-                        'VÍDEOS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            if (isCurrent)
-              Positioned(
-                right: 13,
-                bottom: 155,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _action(
-                      icon: _liked
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      label: 'Curtir',
-                      active: _liked,
-                      onTap: _toggleLike,
                     ),
-                    _action(
-                      icon: Icons.mode_comment_outlined,
-                      label: 'Comentar',
-                      onTap: _showComments,
-                    ),
-                    _action(
-                      icon: _saved
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      label: 'Salvar',
-                      active: _saved,
-                      onTap: _toggleSaved,
-                    ),
-                    _action(
-                      icon: Icons.share_outlined,
-                      label: 'Enviar',
-                      onTap: _shareVideo,
-                    ),
-                  ],
-                ),
-              ),
-            Positioned(
-              left: 20,
-              right: 88,
-              bottom: 35,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AuvixTheme.accent.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AuvixTheme.accent.withValues(alpha: 0.75),
-                      ),
-                    ),
-                    child: const Text(
-                      'EDUCAÇÃO FINANCEIRA',
-                      style: TextStyle(
-                        color: AuvixTheme.accent,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                    ),
-                  ),
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 12),
                     Text(
-                      description,
-                      maxLines: 3,
+                      title,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        height: 1.35,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
                         shadows: [Shadow(color: Colors.black, blurRadius: 8)],
                       ),
                     ),
-                  ],
-                  if (isCurrent) ...[
-                    const SizedBox(height: 17),
-                    OutlinedButton.icon(
-                      onPressed: _togglePlayback,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AuvixTheme.accent,
-                        side: const BorderSide(
-                          color: AuvixTheme.accent,
-                          width: 1.3,
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 7),
+                      Text(
+                        description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          height: 1.35,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
                         ),
-                        backgroundColor: const Color(0xCC06121A),
                       ),
-                      icon: Icon(
-                        _playing
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
+                    ],
+                    if (isCurrent) ...[
+                      const SizedBox(height: 17),
+                      OutlinedButton.icon(
+                        onPressed: _togglePlayback,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AuvixTheme.accent,
+                          side: const BorderSide(
+                            color: AuvixTheme.accent,
+                            width: 1.3,
+                          ),
+                          backgroundColor: const Color(0xCC06121A),
+                        ),
+                        icon: Icon(
+                          _playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                        label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
                       ),
-                      label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            ),
-            if (isCurrent && !_playing)
-              Center(
-                child: _roundButton(
-                  icon: Icons.play_arrow_rounded,
-                  size: 68,
-                  onTap: _togglePlayback,
                 ),
               ),
-          ],
-        );
-      },
+              if (isCurrent && !_playing)
+                Center(
+                  child: _roundButton(
+                    icon: Icons.play_arrow_rounded,
+                    size: 68,
+                    onTap: _togglePlayback,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -876,13 +859,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF06121A),
-      body: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: _videos.length,
-        onPageChanged: _onPageChanged,
-        itemBuilder: (context, index) => _buildVideoPage(index),
-      ),
+      body: SizedBox.expand(child: _buildVideoPage()),
     );
   }
 }
