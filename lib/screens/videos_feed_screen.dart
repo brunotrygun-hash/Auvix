@@ -586,6 +586,8 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     return YoutubePlayer(
       controller: _controllers[index],
       aspectRatio: 9 / 16,
+      enableFullScreenOnVerticalDrag: false,
+      gestureRecognizers: const {},
       controlsBuilder: (playerContext, isFullscreen) {
         return Stack(
           fit: StackFit.expand,
