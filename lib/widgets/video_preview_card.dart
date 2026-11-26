@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import '../services/ambux_videos_service.dart';
 import '../theme/auvix_theme.dart';
 
 class VideoPreviewCard extends StatefulWidget {
@@ -20,43 +21,93 @@ class VideoPreviewCard extends StatefulWidget {
 }
 
 class _VideoPreviewCardState extends State<VideoPreviewCard> {
-  late final YoutubePlayerController _controller;
+  YoutubePlayerController? _controller;
+  StreamSubscription<YoutubePlayerValue>? _playerSubscription;
+
+  String _title = 'AMBUX VÍDEOS';
+  bool _loading = true;
   bool _restarting = false;
-  late final StreamSubscription<YoutubePlayerValue> _playerSubscription;
+  bool _hasVideo = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: '5P0VoKseJjY',
-      autoPlay: widget.isActive,
-      params: const YoutubePlayerParams(
-        showControls: false,
-        showFullscreenButton: false,
-        mute: true,
-        loop: true,
-        playsInline: true,
-        privacyEnhancedMode: true,
-        pointerEvents: PointerEvents.none,
-      ),
-    );
+    _loadVideo();
+  }
 
-    _playerSubscription = _controller.listen((value) {
-      if (value.playerState == PlayerState.ended && widget.isActive) {
-        _restartVideo();
+  Future<void> _loadVideo() async {
+    try {
+      final videos = await AmbuxVideosService.loadPublishedVideos();
+
+      if (!mounted) return;
+
+      if (videos.isEmpty) {
+        setState(() {
+          _loading = false;
+          _hasVideo = false;
+        });
+        return;
       }
-    });
+
+      final video = videos.first;
+      final videoId = video['youtube_id']?.toString() ?? '';
+      final title = video['title']?.toString().trim() ?? '';
+
+      if (videoId.isEmpty) {
+        setState(() {
+          _loading = false;
+          _hasVideo = false;
+        });
+        return;
+      }
+
+      final controller = YoutubePlayerController.fromVideoId(
+        videoId: videoId,
+        autoPlay: widget.isActive,
+        params: const YoutubePlayerParams(
+          showControls: false,
+          showFullscreenButton: false,
+          mute: true,
+          loop: true,
+          playsInline: true,
+          privacyEnhancedMode: true,
+          pointerEvents: PointerEvents.none,
+        ),
+      );
+
+      _playerSubscription = controller.listen((value) {
+        if (value.playerState == PlayerState.ended && widget.isActive) {
+          _restartVideo();
+        }
+      });
+
+      setState(() {
+        _controller = controller;
+        _title = title.isEmpty ? 'Novo vídeo' : title;
+        _loading = false;
+        _hasVideo = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _hasVideo = false;
+      });
+    }
   }
 
   Future<void> _restartVideo() async {
-    if (_restarting || !mounted || !widget.isActive) return;
+    final controller = _controller;
+    if (_restarting || !mounted || !widget.isActive || controller == null) {
+      return;
+    }
 
     _restarting = true;
     try {
-      await _controller.seekTo(seconds: 0, allowSeekAhead: true);
+      await controller.seekTo(seconds: 0, allowSeekAhead: true);
 
       if (mounted && widget.isActive) {
-        await _controller.playVideo();
+        await controller.playVideo();
       }
     } catch (_) {
       // Evita interromper a tela se o player estiver indisponível.
@@ -70,18 +121,21 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.isActive != widget.isActive) {
-      if (widget.isActive) {
-        _controller.playVideo();
-      } else {
-        _controller.pauseVideo();
+      final controller = _controller;
+      if (controller != null) {
+        if (widget.isActive) {
+          controller.playVideo();
+        } else {
+          controller.pauseVideo();
+        }
       }
     }
   }
 
   @override
   void dispose() {
-    unawaited(_playerSubscription.cancel());
-    _controller.close();
+    unawaited(_playerSubscription?.cancel());
+    _controller?.close();
     super.dispose();
   }
 
@@ -98,17 +152,30 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              YoutubePlayer(
-                controller: _controller,
-                aspectRatio: 16 / 9,
-                controlsBuilder: (playerContext, isFullscreen) {
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: widget.onTap,
-                    child: const SizedBox.expand(),
-                  );
-                },
-              ),
+              if (_controller != null)
+                YoutubePlayer(
+                  controller: _controller!,
+                  aspectRatio: 16 / 9,
+                  controlsBuilder: (playerContext, isFullscreen) {
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: widget.onTap,
+                      child: const SizedBox.expand(),
+                    );
+                  },
+                )
+              else
+                Container(
+                  color: const Color(0xFF101B19),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    _loading
+                        ? Icons.play_circle_outline_rounded
+                        : Icons.video_library_outlined,
+                    color: AuvixTheme.accent,
+                    size: 46,
+                  ),
+                ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -142,12 +209,12 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
                       ),
                     ),
                     const SizedBox(width: 11),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          const Text(
                             'AMBUX VÍDEOS',
                             style: TextStyle(
                               color: AuvixTheme.accent,
@@ -156,20 +223,26 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
                               letterSpacing: 1.4,
                             ),
                           ),
-                          SizedBox(height: 3),
+                          const SizedBox(height: 3),
                           Text(
-                            'Seu dinheiro parado perde valor?',
+                            _loading
+                                ? 'Carregando vídeo...'
+                                : _hasVideo
+                                ? _title
+                                : 'Nenhum vídeo publicado',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           Text(
-                            'Toque para assistir agora',
-                            style: TextStyle(
+                            _hasVideo
+                                ? 'Toque para assistir agora'
+                                : 'Novidades em breve',
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 11,
                             ),
@@ -185,28 +258,29 @@ class _VideoPreviewCardState extends State<VideoPreviewCard> {
                   ],
                 ),
               ),
-              Positioned(
-                top: 12,
-                left: 13,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AuvixTheme.accent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'NOVO',
-                    style: TextStyle(
-                      color: Color(0xFF00140F),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+              if (_hasVideo)
+                Positioned(
+                  top: 12,
+                  left: 13,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AuvixTheme.accent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'NOVO',
+                      style: TextStyle(
+                        color: Color(0xFF00140F),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

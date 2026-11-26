@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import '../services/ambux_videos_service.dart';
 import '../widgets/video_comments_sheet.dart';
 import '../services/video_interactions_service.dart';
 import '../theme/auvix_theme.dart';
@@ -24,10 +25,15 @@ class VideosFeedScreen extends StatefulWidget {
 }
 
 class _VideosFeedScreenState extends State<VideosFeedScreen> {
-  late final YoutubePlayerController _controller;
-  bool _restarting = false;
-  late final StreamSubscription<YoutubePlayerValue> _playerSubscription;
+  final PageController _pageController = PageController();
+  final List<YoutubePlayerController> _controllers = [];
+  final List<StreamSubscription<YoutubePlayerValue>> _subscriptions = [];
 
+  List<Map<String, dynamic>> _videos = [];
+  int _currentIndex = 0;
+
+  bool _loading = true;
+  bool _restarting = false;
   bool _liked = false;
   bool _saved = false;
   bool _loadingInteractions = true;
@@ -35,63 +41,150 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   bool _saveBusy = false;
   bool _playing = false;
 
-  static const String _videoUrl = 'https://youtube.com/shorts/5P0VoKseJjY';
+  Map<String, dynamic>? get _currentVideo =>
+      _videos.isEmpty ? null : _videos[_currentIndex];
+
+  String get _currentVideoId => _currentVideo?['youtube_id']?.toString() ?? '';
+
+  String get _videoUrl => 'https://youtube.com/shorts/$_currentVideoId';
+
+  String get _videoTitle =>
+      _currentVideo?['title']?.toString() ?? 'Vídeo AMBUX';
+
+  String get _videoDescription =>
+      _currentVideo?['description']?.toString() ?? '';
 
   @override
   void initState() {
     super.initState();
-
     _playing = widget.isActive;
-    _loadInteractionStatus();
-
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: '5P0VoKseJjY',
-      autoPlay: widget.isActive,
-      params: const YoutubePlayerParams(
-        showControls: false,
-        showFullscreenButton: false,
-        mute: false,
-        loop: true,
-        playsInline: true,
-        privacyEnhancedMode: true,
-        pointerEvents: PointerEvents.none,
-      ),
-    );
-
-    _playerSubscription = _controller.listen((value) {
-      if (value.playerState == PlayerState.ended && widget.isActive) {
-        _restartVideo();
-      }
-    });
+    _loadVideos();
   }
 
-  Future<void> _restartVideo() async {
-    if (_restarting || !mounted || !widget.isActive) return;
+  Future<void> _loadVideos() async {
+    try {
+      final videos = await AmbuxVideosService.loadPublishedVideos();
+
+      if (!mounted) return;
+
+      final validVideos = videos.where((video) {
+        return (video['youtube_id']?.toString() ?? '').isNotEmpty;
+      }).toList();
+
+      if (validVideos.isEmpty) {
+        setState(() {
+          _videos = [];
+          _loading = false;
+        });
+        return;
+      }
+
+      for (var i = 0; i < validVideos.length; i++) {
+        final videoId = validVideos[i]['youtube_id'].toString();
+
+        final controller = YoutubePlayerController.fromVideoId(
+          videoId: videoId,
+          autoPlay: i == 0 && widget.isActive,
+          params: const YoutubePlayerParams(
+            showControls: false,
+            showFullscreenButton: false,
+            mute: false,
+            loop: true,
+            playsInline: true,
+            privacyEnhancedMode: true,
+            pointerEvents: PointerEvents.none,
+          ),
+        );
+
+        _controllers.add(controller);
+
+        _subscriptions.add(
+          controller.listen((value) {
+            if (value.playerState == PlayerState.ended &&
+                i == _currentIndex &&
+                widget.isActive) {
+              _restartVideo(i);
+            }
+          }),
+        );
+      }
+
+      setState(() {
+        _videos = validVideos;
+        _loading = false;
+      });
+
+      _loadInteractionStatus();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      _showMessage('Não foi possível carregar os vídeos.');
+    }
+  }
+
+  Future<void> _restartVideo(int index) async {
+    if (_restarting ||
+        !mounted ||
+        !widget.isActive ||
+        index != _currentIndex ||
+        index >= _controllers.length) {
+      return;
+    }
 
     _restarting = true;
     try {
-      await _controller.seekTo(seconds: 0, allowSeekAhead: true);
+      final controller = _controllers[index];
+      await controller.seekTo(seconds: 0, allowSeekAhead: true);
 
-      if (mounted && widget.isActive) {
-        await _controller.playVideo();
+      if (mounted && widget.isActive && index == _currentIndex) {
+        await controller.playVideo();
       }
     } catch (_) {
-      // Evita interromper a tela se o player estiver indisponível.
+      // Evita interromper o feed se o player estiver indisponível.
     } finally {
       _restarting = false;
     }
+  }
+
+  Future<void> _onPageChanged(int index) async {
+    if (index < 0 || index >= _controllers.length) return;
+
+    final previousIndex = _currentIndex;
+
+    if (previousIndex < _controllers.length) {
+      await _controllers[previousIndex].pauseVideo();
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _currentIndex = index;
+      _playing = widget.isActive;
+      _liked = false;
+      _saved = false;
+      _loadingInteractions = true;
+      _likeBusy = false;
+      _saveBusy = false;
+    });
+
+    if (widget.isActive) {
+      await _controllers[index].playVideo();
+    }
+
+    _loadInteractionStatus();
   }
 
   @override
   void didUpdateWidget(covariant VideosFeedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.isActive != widget.isActive) {
+    if (oldWidget.isActive != widget.isActive &&
+        _currentIndex < _controllers.length) {
       if (widget.isActive) {
-        _controller.playVideo();
+        _controllers[_currentIndex].playVideo();
         _playing = true;
       } else {
-        _controller.pauseVideo();
+        _controllers[_currentIndex].pauseVideo();
         _playing = false;
       }
     }
@@ -99,20 +192,30 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
 
   @override
   void dispose() {
-    unawaited(_playerSubscription.cancel());
-    _controller.close();
+    for (final subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
+
+    for (final controller in _controllers) {
+      controller.close();
+    }
+
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _togglePlayback() async {
-    if (_playing) {
-      await _controller.pauseVideo();
-    } else {
-      await _controller.playVideo();
-    }
+  Future<void> _togglePlayback() async {
+    if (_currentIndex >= _controllers.length) return;
 
-    if (mounted) {
-      setState(() => _playing = !_playing);
+    final controller = _controllers[_currentIndex];
+    final shouldPlay = !_playing;
+
+    setState(() => _playing = shouldPlay);
+
+    if (shouldPlay) {
+      await controller.playVideo();
+    } else {
+      await controller.pauseVideo();
     }
   }
 
@@ -127,6 +230,8 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
   }
 
   void _showComments() {
+    if (_currentVideoId.isEmpty) return;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -134,17 +239,18 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => const VideoCommentsSheet(videoId: '5P0VoKseJjY'),
+      builder: (_) => VideoCommentsSheet(videoId: _currentVideoId),
     );
   }
 
   Future<void> _loadInteractionStatus() async {
-    try {
-      final status = await VideoInteractionsService.loadVideoStatus(
-        '5P0VoKseJjY',
-      );
+    final videoId = _currentVideoId;
+    if (videoId.isEmpty) return;
 
-      if (!mounted) return;
+    try {
+      final status = await VideoInteractionsService.loadVideoStatus(videoId);
+
+      if (!mounted || videoId != _currentVideoId) return;
 
       setState(() {
         _liked = status['liked'] ?? false;
@@ -152,47 +258,54 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
         _loadingInteractions = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || videoId != _currentVideoId) return;
       setState(() => _loadingInteractions = false);
       _showMessage('Não foi possível carregar suas interações.');
     }
   }
 
   Future<void> _toggleLike() async {
-    if (_likeBusy || _loadingInteractions) return;
+    if (_likeBusy || _loadingInteractions || _currentVideoId.isEmpty) return;
+
+    final videoId = _currentVideoId;
+    final previousLiked = _liked;
 
     setState(() => _likeBusy = true);
 
     try {
       final result = await VideoInteractionsService.toggleVideoLike(
-        '5P0VoKseJjY',
-        _liked,
+        videoId,
+        previousLiked,
       );
 
-      if (!mounted) return;
-
+      if (!mounted || videoId != _currentVideoId) return;
       setState(() => _liked = result);
     } catch (_) {
-      if (mounted) {
+      if (mounted && videoId == _currentVideoId) {
         _showMessage('Não foi possível registrar sua curtida.');
       }
     } finally {
-      if (mounted) setState(() => _likeBusy = false);
+      if (mounted && videoId == _currentVideoId) {
+        setState(() => _likeBusy = false);
+      }
     }
   }
 
   Future<void> _toggleSaved() async {
-    if (_saveBusy || _loadingInteractions) return;
+    if (_saveBusy || _loadingInteractions || _currentVideoId.isEmpty) return;
+
+    final videoId = _currentVideoId;
+    final previousSaved = _saved;
 
     setState(() => _saveBusy = true);
 
     try {
       final result = await VideoInteractionsService.toggleSavedVideo(
-        '5P0VoKseJjY',
-        _saved,
+        videoId,
+        previousSaved,
       );
 
-      if (!mounted) return;
+      if (!mounted || videoId != _currentVideoId) return;
 
       setState(() => _saved = result);
 
@@ -202,15 +315,20 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
             : 'Vídeo removido dos seus salvos.',
       );
     } catch (_) {
-      if (mounted) {
+      if (mounted && videoId == _currentVideoId) {
         _showMessage('Não foi possível salvar o vídeo.');
       }
     } finally {
-      if (mounted) setState(() => _saveBusy = false);
+      if (mounted && videoId == _currentVideoId) {
+        setState(() => _saveBusy = false);
+      }
     }
   }
 
   Future<void> _shareVideo() async {
+    final videoUrl = _videoUrl;
+    if (_currentVideoId.isEmpty) return;
+
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF0B1C27),
@@ -270,7 +388,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                         onTap: () async {
                           Navigator.pop(sheetContext);
                           final text = Uri.encodeComponent(
-                            'Confira este vídeo do AMBUX: $_videoUrl',
+                            'Confira este vídeo do AMBUX: $videoUrl',
                           );
                           await _openShareDestination(
                             'https://wa.me/?text=$text',
@@ -286,7 +404,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                         icon: Icons.facebook_rounded,
                         onTap: () async {
                           Navigator.pop(sheetContext);
-                          final link = Uri.encodeComponent(_videoUrl);
+                          final link = Uri.encodeComponent(videoUrl);
                           await _openShareDestination(
                             'https://www.facebook.com/sharer/sharer.php?u=$link',
                           );
@@ -301,7 +419,7 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
                         icon: Icons.copy_rounded,
                         onTap: () async {
                           await Clipboard.setData(
-                            const ClipboardData(text: _videoUrl),
+                            ClipboardData(text: videoUrl),
                           );
                           if (sheetContext.mounted) {
                             Navigator.pop(sheetContext);
@@ -429,207 +547,6 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF06121A),
-      body: SizedBox.expand(
-        child: YoutubePlayer(
-          controller: _controller,
-          aspectRatio: 9 / 16,
-          controlsBuilder: (playerContext, isFullscreen) {
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.48),
-                          Colors.transparent,
-                          Colors.transparent,
-                          const Color(0xE606121A),
-                        ],
-                        stops: const [0, 0.22, 0.58, 1],
-                      ),
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          _roundButton(
-                            icon: Icons.arrow_back_rounded,
-                            onTap: widget.onExit,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'AMBUX',
-                            style: TextStyle(
-                              color: AuvixTheme.accent,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
-                              shadows: [
-                                Shadow(
-                                  color: AuvixTheme.accent,
-                                  blurRadius: 12,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Spacer(),
-                          const Text(
-                            'VÍDEOS',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  right: 13,
-                  bottom: 155,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _action(
-                        icon: _liked
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        label: 'Curtir',
-                        active: _liked,
-                        onTap: _toggleLike,
-                      ),
-                      _action(
-                        icon: Icons.mode_comment_outlined,
-                        label: 'Comentar',
-                        onTap: _showComments,
-                      ),
-                      _action(
-                        icon: _saved
-                            ? Icons.bookmark_rounded
-                            : Icons.bookmark_border_rounded,
-                        label: 'Salvar',
-                        active: _saved,
-                        onTap: _toggleSaved,
-                      ),
-                      _action(
-                        icon: Icons.share_outlined,
-                        label: 'Enviar',
-                        onTap: _shareVideo,
-                      ),
-                    ],
-                  ),
-                ),
-
-                Positioned(
-                  left: 20,
-                  right: 88,
-                  bottom: 35,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AuvixTheme.accent.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AuvixTheme.accent.withValues(alpha: 0.75),
-                          ),
-                        ),
-                        child: const Text(
-                          'EDUCAÇÃO FINANCEIRA',
-                          style: TextStyle(
-                            color: AuvixTheme.accent,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Seu dinheiro parado perde valor?',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      const Text(
-                        'Aprenda a investir e faça seu dinheiro trabalhar por você.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          height: 1.35,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                        ),
-                      ),
-                      const SizedBox(height: 17),
-                      OutlinedButton.icon(
-                        onPressed: _togglePlayback,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AuvixTheme.accent,
-                          side: const BorderSide(
-                            color: AuvixTheme.accent,
-                            width: 1.3,
-                          ),
-                          backgroundColor: const Color(0xCC06121A),
-                        ),
-                        icon: Icon(
-                          _playing
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                        ),
-                        label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (!_playing)
-                  Center(
-                    child: _roundButton(
-                      icon: Icons.play_arrow_rounded,
-                      size: 68,
-                      onTap: _togglePlayback,
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   Widget _roundButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -656,6 +573,274 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
           ),
           child: Icon(icon, color: AuvixTheme.accent, size: size * 0.55),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPage(int index) {
+    final video = _videos[index];
+    final isCurrent = index == _currentIndex;
+    final title = video['title']?.toString() ?? 'Vídeo AMBUX';
+    final description = video['description']?.toString() ?? '';
+
+    return YoutubePlayer(
+      controller: _controllers[index],
+      aspectRatio: 9 / 16,
+      controlsBuilder: (playerContext, isFullscreen) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: isCurrent ? _togglePlayback : null,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.48),
+                      Colors.transparent,
+                      Colors.transparent,
+                      const Color(0xE606121A),
+                    ],
+                    stops: const [0, 0.22, 0.58, 1],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      _roundButton(
+                        icon: Icons.arrow_back_rounded,
+                        onTap: widget.onExit,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'AMBUX',
+                        style: TextStyle(
+                          color: AuvixTheme.accent,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 3,
+                          shadows: [
+                            Shadow(color: AuvixTheme.accent, blurRadius: 12),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'VÍDEOS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (isCurrent)
+              Positioned(
+                right: 13,
+                bottom: 155,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _action(
+                      icon: _liked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      label: 'Curtir',
+                      active: _liked,
+                      onTap: _toggleLike,
+                    ),
+                    _action(
+                      icon: Icons.mode_comment_outlined,
+                      label: 'Comentar',
+                      onTap: _showComments,
+                    ),
+                    _action(
+                      icon: _saved
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      label: 'Salvar',
+                      active: _saved,
+                      onTap: _toggleSaved,
+                    ),
+                    _action(
+                      icon: Icons.share_outlined,
+                      label: 'Enviar',
+                      onTap: _shareVideo,
+                    ),
+                  ],
+                ),
+              ),
+            Positioned(
+              left: 20,
+              right: 88,
+              bottom: 35,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AuvixTheme.accent.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AuvixTheme.accent.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    child: const Text(
+                      'EDUCAÇÃO FINANCEIRA',
+                      style: TextStyle(
+                        color: AuvixTheme.accent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                    ),
+                  ),
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: 7),
+                    Text(
+                      description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                      ),
+                    ),
+                  ],
+                  if (isCurrent) ...[
+                    const SizedBox(height: 17),
+                    OutlinedButton.icon(
+                      onPressed: _togglePlayback,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AuvixTheme.accent,
+                        side: const BorderSide(
+                          color: AuvixTheme.accent,
+                          width: 1.3,
+                        ),
+                        backgroundColor: const Color(0xCC06121A),
+                      ),
+                      icon: Icon(
+                        _playing
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                      ),
+                      label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isCurrent && !_playing)
+              Center(
+                child: _roundButton(
+                  icon: Icons.play_arrow_rounded,
+                  size: 68,
+                  onTap: _togglePlayback,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF06121A),
+        body: Center(
+          child: CircularProgressIndicator(color: AuvixTheme.accent),
+        ),
+      );
+    }
+
+    if (_videos.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF06121A),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.video_library_outlined,
+                  color: AuvixTheme.accent,
+                  size: 58,
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Ainda não há vídeos publicados',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                OutlinedButton(
+                  onPressed: widget.onExit,
+                  child: const Text('Voltar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF06121A),
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _videos.length,
+        onPageChanged: _onPageChanged,
+        itemBuilder: (context, index) => _buildVideoPage(index),
       ),
     );
   }

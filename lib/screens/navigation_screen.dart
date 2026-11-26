@@ -9,6 +9,7 @@ import 'money_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'admin_announcements_screen.dart';
+import 'admin_videos_screen.dart';
 import 'videos_feed_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -591,6 +592,25 @@ class _MoreScreenState extends State<MoreScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const AdminAnnouncementsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Card(
+              color: AuvixTheme.surface,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.video_library_rounded,
+                  color: AuvixTheme.accent,
+                ),
+                title: const Text('Gerenciar vídeos'),
+                subtitle: const Text('Publicar e administrar vídeos do AMBUX'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminVideosScreen(),
                     ),
                   );
                 },
