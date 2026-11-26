@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -144,6 +146,37 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     } finally {
       _restarting = false;
     }
+  }
+
+  final Map<int, Offset> _swipePointers = {};
+
+  void _handleSwipePointerDown(PointerDownEvent event) {
+    _swipePointers[event.pointer] = event.position;
+  }
+
+  void _handleSwipePointerUp(PointerUpEvent event) {
+    final start = _swipePointers.remove(event.pointer);
+    if (start == null || !_pageController.hasClients) return;
+
+    final delta = event.position - start;
+
+    if (delta.dy.abs() < 60 || delta.dy.abs() < delta.dx.abs()) {
+      return;
+    }
+
+    final targetIndex = delta.dy < 0 ? _currentIndex + 1 : _currentIndex - 1;
+
+    if (targetIndex < 0 || targetIndex >= _videos.length) return;
+
+    _pageController.animateToPage(
+      targetIndex,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _handleSwipePointerCancel(PointerCancelEvent event) {
+    _swipePointers.remove(event.pointer);
   }
 
   Future<void> _onPageChanged(int index) async {
@@ -593,10 +626,16 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
           fit: StackFit.expand,
           children: [
             Positioned.fill(
-              child: GestureDetector(
+              child: Listener(
                 behavior: HitTestBehavior.opaque,
-                onTap: isCurrent ? _togglePlayback : null,
-                child: const SizedBox.expand(),
+                onPointerDown: _handleSwipePointerDown,
+                onPointerUp: _handleSwipePointerUp,
+                onPointerCancel: _handleSwipePointerCancel,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: isCurrent ? _togglePlayback : null,
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
             IgnorePointer(
