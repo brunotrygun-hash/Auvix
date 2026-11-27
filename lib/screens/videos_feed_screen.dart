@@ -138,37 +138,29 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
     }
   }
 
-  int? _verticalPointer;
-  double? _verticalStartY;
+  double _verticalDragDistance = 0;
 
-  void _handlePointerDown(PointerDownEvent event) {
-    if (_verticalPointer != null) return;
-    _verticalPointer = event.pointer;
-    _verticalStartY = event.position.dy;
+  void _handleVerticalDragStart(DragStartDetails details) {
+    _verticalDragDistance = 0;
   }
 
-  void _handlePointerUp(PointerUpEvent event) {
-    if (event.pointer != _verticalPointer) return;
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    _verticalDragDistance += details.primaryDelta ?? 0;
+  }
 
-    final startY = _verticalStartY;
-    final distance = startY == null ? 0.0 : event.position.dy - startY;
+  void _handleVerticalDragEnd(DragEndDetails details) {
+    final distance = _verticalDragDistance;
+    final velocity = details.primaryVelocity ?? 0;
+    _verticalDragDistance = 0;
 
-    _verticalPointer = null;
-    _verticalStartY = null;
+    if (distance.abs() < 70 && velocity.abs() < 350) return;
 
-    if (distance.abs() < 70) return;
-
-    final targetIndex = distance < 0 ? _currentIndex + 1 : _currentIndex - 1;
+    final direction = distance.abs() >= 70 ? distance : velocity;
+    final targetIndex = direction < 0 ? _currentIndex + 1 : _currentIndex - 1;
 
     if (targetIndex < 0 || targetIndex >= _videos.length) return;
 
     unawaited(_onPageChanged(targetIndex));
-  }
-
-  void _handlePointerCancel(PointerCancelEvent event) {
-    if (event.pointer != _verticalPointer) return;
-    _verticalPointer = null;
-    _verticalStartY = null;
   }
 
   Future<void> _onPageChanged(int index) async {
@@ -607,199 +599,202 @@ class _VideosFeedScreenState extends State<VideosFeedScreen> {
       return const ColoredBox(color: Color(0xFF06121A));
     }
 
-    return Listener(
-      behavior: HitTestBehavior.opaque,
-      onPointerDown: _handlePointerDown,
-      onPointerUp: _handlePointerUp,
-      onPointerCancel: _handlePointerCancel,
-      child: YoutubePlayer(
-        controller: _controller!,
-        aspectRatio: 9 / 16,
-        enableFullScreenOnVerticalDrag: false,
-        gestureRecognizers: const {},
-        controlsBuilder: (playerContext, isFullscreen) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.48),
-                        Colors.transparent,
-                        Colors.transparent,
-                        const Color(0xE606121A),
-                      ],
-                      stops: const [0, 0.22, 0.58, 1],
-                    ),
-                  ),
-                ),
+    return YoutubePlayer(
+      controller: _controller!,
+      aspectRatio: 9 / 16,
+      enableFullScreenOnVerticalDrag: false,
+      gestureRecognizers: const {},
+      controlsBuilder: (playerContext, isFullscreen) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onVerticalDragStart: _handleVerticalDragStart,
+                onVerticalDragUpdate: _handleVerticalDragUpdate,
+                onVerticalDragEnd: _handleVerticalDragEnd,
+                child: const SizedBox.expand(),
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        _roundButton(
-                          icon: Icons.arrow_back_rounded,
-                          onTap: widget.onExit,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'AMBUX',
-                          style: TextStyle(
-                            color: AuvixTheme.accent,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 3,
-                            shadows: [
-                              Shadow(color: AuvixTheme.accent, blurRadius: 12),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'VÍDEOS',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (isCurrent)
-                Positioned(
-                  right: 13,
-                  bottom: 155,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _action(
-                        icon: _liked
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        label: 'Curtir',
-                        active: _liked,
-                        onTap: _toggleLike,
-                      ),
-                      _action(
-                        icon: Icons.mode_comment_outlined,
-                        label: 'Comentar',
-                        onTap: _showComments,
-                      ),
-                      _action(
-                        icon: _saved
-                            ? Icons.bookmark_rounded
-                            : Icons.bookmark_border_rounded,
-                        label: 'Salvar',
-                        active: _saved,
-                        onTap: _toggleSaved,
-                      ),
-                      _action(
-                        icon: Icons.share_outlined,
-                        label: 'Enviar',
-                        onTap: _shareVideo,
-                      ),
+            ),
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.48),
+                      Colors.transparent,
+                      Colors.transparent,
+                      const Color(0xE606121A),
                     ],
+                    stops: const [0, 0.22, 0.58, 1],
                   ),
                 ),
-              Positioned(
-                left: 20,
-                right: 88,
-                bottom: 35,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      _roundButton(
+                        icon: Icons.arrow_back_rounded,
+                        onTap: widget.onExit,
                       ),
-                      decoration: BoxDecoration(
-                        color: AuvixTheme.accent.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AuvixTheme.accent.withValues(alpha: 0.75),
-                        ),
-                      ),
-                      child: const Text(
-                        'EDUCAÇÃO FINANCEIRA',
+                      const SizedBox(width: 12),
+                      const Text(
+                        'AMBUX',
                         style: TextStyle(
                           color: AuvixTheme.accent,
-                          fontSize: 9,
+                          fontSize: 21,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          letterSpacing: 3,
+                          shadows: [
+                            Shadow(color: AuvixTheme.accent, blurRadius: 12),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-                      ),
-                    ),
-                    if (description.isNotEmpty) ...[
-                      const SizedBox(height: 7),
-                      Text(
-                        description,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                      const Spacer(),
+                      const Text(
+                        'VÍDEOS',
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
-                          height: 1.35,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
                         ),
                       ),
                     ],
-                    if (isCurrent) ...[
-                      const SizedBox(height: 17),
-                      OutlinedButton.icon(
-                        onPressed: _togglePlayback,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AuvixTheme.accent,
-                          side: const BorderSide(
-                            color: AuvixTheme.accent,
-                            width: 1.3,
-                          ),
-                          backgroundColor: const Color(0xCC06121A),
-                        ),
-                        icon: Icon(
-                          _playing
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                        ),
-                        label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
-                      ),
-                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (isCurrent)
+              Positioned(
+                right: 13,
+                bottom: 155,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _action(
+                      icon: _liked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      label: 'Curtir',
+                      active: _liked,
+                      onTap: _toggleLike,
+                    ),
+                    _action(
+                      icon: Icons.mode_comment_outlined,
+                      label: 'Comentar',
+                      onTap: _showComments,
+                    ),
+                    _action(
+                      icon: _saved
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      label: 'Salvar',
+                      active: _saved,
+                      onTap: _toggleSaved,
+                    ),
+                    _action(
+                      icon: Icons.share_outlined,
+                      label: 'Enviar',
+                      onTap: _shareVideo,
+                    ),
                   ],
                 ),
               ),
-            ],
-          );
-        },
-      ),
+            Positioned(
+              left: 20,
+              right: 88,
+              bottom: 35,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AuvixTheme.accent.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AuvixTheme.accent.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    child: const Text(
+                      'EDUCAÇÃO FINANCEIRA',
+                      style: TextStyle(
+                        color: AuvixTheme.accent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                    ),
+                  ),
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: 7),
+                    Text(
+                      description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                      ),
+                    ),
+                  ],
+                  if (isCurrent) ...[
+                    const SizedBox(height: 17),
+                    OutlinedButton.icon(
+                      onPressed: _togglePlayback,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AuvixTheme.accent,
+                        side: const BorderSide(
+                          color: AuvixTheme.accent,
+                          width: 1.3,
+                        ),
+                        backgroundColor: const Color(0xCC06121A),
+                      ),
+                      icon: Icon(
+                        _playing
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                      ),
+                      label: Text(_playing ? 'Pausar vídeo' : 'Continuar'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
